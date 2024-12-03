@@ -1,0 +1,1 @@
+You can copy this template repo to a new one to start new Elixir projects. Then, you can run `mix new` to make this root folder the mix project folder, and go from there. You might have to update the Github codespaces workspace folder if you rename the root folder.
