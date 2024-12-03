@@ -1,24 +1,27 @@
-# Use the official Elixir image from Docker Hub
-FROM elixir:latest
+FROM mcr.microsoft.com/devcontainers/base:debian
 
-# Install basic development tools
-RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    wget \
-    inotify-tools \
-    less \
-    readline-common \
-    libreadline8 \
+
+# Install dependencies and Erlang/Elixir
+RUN apt-get update && export DEBIAN_FRONTEND=noninteractive && apt-get -y install \
+        git \
+        wget \
+        less \
+        curl \
+        gnupg \
+        inotify-tools \
+        readline-common \
+        libreadline8 \
+    && apt-get -y install erlang-dev elixir \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
 
 # Install hex and rebar
 RUN mix local.hex --force && \
     mix local.rebar --force
 
 # Configure Git to trust the workspace
-RUN git config --global --add safe.directory /workspaces/elixir-devcontainer \
-&& git config --global --add safe.directory /workspace
+RUN git config --global --add safe.directory /workspaces/elixir-devcontainer && git config --global --add safe.directory /workspace
 
 # Configure Git to use less as pager with proper settings
 RUN git config --global core.pager 'less -R' && \
