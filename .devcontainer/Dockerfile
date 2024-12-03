@@ -20,8 +20,9 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive && apt-get -y instal
 RUN mix local.hex --force && \
     mix local.rebar --force
 
-# Configure Git to trust the workspace
-RUN git config --global --add safe.directory /workspaces/elixir-devcontainer && git config --global --add safe.directory /workspace
+# Configure Git to trust all workspaces
+RUN git config --global --add safe.directory '*'
+
 
 # Configure Git to use less as pager with proper settings
 RUN git config --global core.pager 'less -R' && \
