@@ -1,0 +1,14 @@
+{
+  "name": "Elixir Development",
+  "dockerFile": "Dockerfile",
+  "settings": {
+    "terminal.integrated.shell.linux": "/bin/bash"
+  },
+  "extensions": [
+    "jakebecker.elixir-ls",
+    "phoenixframework.phoenix",
+    "msaraiva.surface"
+  ],
+  "forwardPorts": [4000],
+  "postCreateCommand": "mix local.hex --force && mix local.rebar --force"
+}
