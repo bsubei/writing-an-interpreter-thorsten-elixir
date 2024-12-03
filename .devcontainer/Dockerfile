@@ -9,6 +9,10 @@ RUN apt-get update && apt-get install -y \
     inotify-tools \
     && rm -rf /var/lib/apt/lists/*
 
+# Configure Git to trust the workspace
+RUN git config --global --add safe.directory /workspaces/elixir-devcontainer \
+&& git config --global --add safe.directory /workspace
+
 # Set working directory
 WORKDIR /workspace
 
