@@ -1,1 +1,6 @@
-You can copy this template repo to a new one to start new Elixir projects. Then, you can run `mix new` to make this root folder the mix project folder, and go from there. You might have to update the Github codespaces workspace folder if you rename the root folder.
+ # Book
+ This repo is my attempt to follow along with the book "Writing An Interpreter In Go" by Thorsten Ball, but implemented in Elixir. The book can be found at: https://interpreterbook.com
+
+ # TODOs
+ - Figure out why the dialyzer is not warning when we explicitly use incorrect atoms in TokenType.t().
+ - TODO

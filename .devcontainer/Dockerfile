@@ -3,15 +3,15 @@ FROM mcr.microsoft.com/devcontainers/base:debian
 
 # Install dependencies and Erlang/Elixir
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive && apt-get -y install \
-        git \
-        wget \
-        less \
-        curl \
-        gnupg \
-        inotify-tools \
-        readline-common \
-        libreadline8 \
-    && apt-get -y install erlang-dev elixir \
+    git \
+    wget \
+    less \
+    curl \
+    gnupg \
+    inotify-tools \
+    readline-common \
+    libreadline8 \
+    erlang-dev erlang-dialyzer elixir \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
