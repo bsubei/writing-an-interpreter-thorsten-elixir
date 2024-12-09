@@ -41,7 +41,7 @@ if (5 < 10) {
       Token.init(:function, "fn"),
       Token.init(:lparen, "("),
       Token.init(:ident, "x"),
-      Token.init(:comma, "}"),
+      Token.init(:comma, ","),
       Token.init(:ident, "y"),
       Token.init(:rparen, ")"),
       Token.init(:lbrace, "{"),
@@ -57,7 +57,7 @@ if (5 < 10) {
       Token.init(:ident, "add"),
       Token.init(:lparen, "("),
       Token.init(:ident, "five"),
-      Token.init(:comma, "}"),
+      Token.init(:comma, ","),
       Token.init(:ident, "ten"),
       Token.init(:rparen, ")"),
       Token.init(:semicolon, ";"),
@@ -103,9 +103,12 @@ if (5 < 10) {
 
     lexer = Lexer.init(input)
 
+    # Go over every expected token, smuggling along the updated lexer as the "acc" in a reduce/fold.
+    # Check that the returned token matches each expected token.
     expected_tokens
-    |> Enum.each(fn expected_token ->
-      assert {lexer, ^expected_token} = Lexer.next_token(lexer)
+    |> Enum.reduce(lexer, fn expected_token, l ->
+      assert {new_lexer, ^expected_token} = Lexer.next_token(l)
+      new_lexer
     end)
   end
 end
