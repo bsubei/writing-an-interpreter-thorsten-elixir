@@ -3,7 +3,7 @@ defmodule MonkeyInterpreter.Repl do
 
   @spec start() :: no_return()
   def start do
-    username = "TODO"
+    username = get_username()
 
     IO.puts(
       "Hello, #{username}! This is the Monkey programming language!\nFeel free to type in commands\n"
@@ -33,5 +33,9 @@ defmodule MonkeyInterpreter.Repl do
 
         read_loop()
     end
+  end
+
+  defp get_username do
+    System.get_env("USER") || System.get_env("USERNAME")
   end
 end
