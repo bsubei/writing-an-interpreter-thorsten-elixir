@@ -1,5 +1,6 @@
 defmodule LexerTest do
   use ExUnit.Case
+  alias MonkeyInterpreter.{Lexer, Token}
   doctest Lexer
 
   test "lexer can lex a basic program and check every token using next_token" do
@@ -105,10 +106,13 @@ if (5 < 10) {
 
     # Go over every expected token, smuggling along the updated lexer as the "acc" in a reduce/fold.
     # Check that the returned token matches each expected token.
-    expected_tokens
-    |> Enum.reduce(lexer, fn expected_token, l ->
-      assert {new_lexer, ^expected_token} = Lexer.next_token(l)
-      new_lexer
-    end)
+    # expected_tokens
+    # |> Enum.reduce(lexer, fn expected_token, l ->
+    #   assert {new_lexer, ^expected_token} = Lexer.next_token(l)
+    #   new_lexer
+    # end)
+
+    # This is a nicer way to do it, just grab all the tokens and compare them.
+    assert expected_tokens == Lexer.all_tokens(lexer)
   end
 end

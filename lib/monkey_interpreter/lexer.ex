@@ -1,5 +1,4 @@
-defmodule Lexer do
-  require Lexer
+defmodule MonkeyInterpreter.Lexer do
   @enforce_keys [:text, :current_pos]
   @type t :: %__MODULE__{
           text: binary(),
@@ -7,13 +6,29 @@ defmodule Lexer do
         }
   defstruct [:text, :current_pos]
 
+  alias MonkeyInterpreter.Token
+
   # NOTE: here, "ch" must be an integer representing the utf8 codepoint for the character. "ch" is not a binary/string.
   defguard is_letter?(ch) when ch in ?a..?z or ch in ?A..?Z
   defguard is_whitespace?(ch) when ch in [?\s, ?\t, ?\n, ?\r]
   defguard is_digit?(ch) when ch in ?0..?9
 
   @spec init(binary()) :: t()
-  def init(text), do: %Lexer{text: text, current_pos: 0}
+  def init(text), do: %__MODULE__{text: text, current_pos: 0}
+
+  # Given a Lexer, read off all the tokens until you reach an :eof token. Include the eof token in the return.
+  @spec all_tokens(t(), list(Token.t())) :: list(Token.t())
+  def all_tokens(state, acc \\ [])
+
+  def all_tokens(_state, [%Token{type: :eof} | _rest] = acc) do
+    # Reverse the tokens because we prepended.
+    Enum.reverse(acc)
+  end
+
+  def all_tokens(state, acc) do
+    {state, token} = __MODULE__.next_token(state)
+    all_tokens(state, [token | acc])
+  end
 
   # TODO we assume ASCII input, not unicode.
   # TODO no error handling, will always return eof after nothing left to read.
