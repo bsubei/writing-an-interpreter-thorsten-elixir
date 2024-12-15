@@ -3,7 +3,7 @@ defmodule LexerTest do
   alias MonkeyInterpreter.{Lexer, Token}
   doctest Lexer
 
-  test "lexer can lex a basic program and check every token using next_token" do
+  test "lexer can lex a basic program and check every token using all_tokens" do
     input = "let five = 5;
 let ten = 10;
 
