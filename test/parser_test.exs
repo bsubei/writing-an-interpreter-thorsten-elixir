@@ -1,5 +1,6 @@
 defmodule ParserTest do
   use ExUnit.Case
+  alias MonkeyInterpreter.Ast.LetStatement
   alias MonkeyInterpreter.{Lexer, Parser}
   doctest Parser
 
@@ -12,15 +13,38 @@ defmodule ParserTest do
 
     # Go over every input let statement, and check it against the parsed output (identifier and value).
     inputs_and_outputs
-    |> Enum.map(fn {input, expected_identifier, expected_value} ->
-      # Check that parsing the program results in a single program statement, with the expected identifier and value.
+    |> Enum.each(fn {input, expected_identifier, expected_value} ->
+      # Check that parsing the program results in a single let statement, with the expected identifier and value.
       program = Lexer.init(input) |> Parser.init() |> Parser.parse_program()
 
       assert length(program.statements) == 1
 
-      stmt = program.statements |> List.first()
-      assert stmt.name == expected_identifier
-      # assert stmt.value == expected_value
+      case program.statements |> List.first() do
+        {:let, stmt} ->
+          assert stmt.name == expected_identifier
+          # assert stmt.value == expected_value
+      end
+    end)
+  end
+
+  test "parser can parse return statements" do
+    inputs = [
+      "return 5;",
+      "return 10;",
+      "return 993322;"
+    ]
+
+    # Go over every input let statement, and check it against the parsed output (identifier and value).
+    inputs
+    |> Enum.each(fn input ->
+      program = input |> Lexer.init() |> Parser.init() |> Parser.parse_program()
+      assert length(program.statements) == 1
+
+      case program.statements |> List.first() do
+        {:return, stmt} ->
+          nil
+          # assert stmt.return_value == ???
+      end
     end)
   end
 end

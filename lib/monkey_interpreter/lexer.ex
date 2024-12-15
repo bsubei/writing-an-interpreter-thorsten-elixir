@@ -1,19 +1,19 @@
 defmodule MonkeyInterpreter.Lexer do
   @enforce_keys [:text, :current_pos]
   @type t :: %__MODULE__{
-          text: binary(),
+          text: String.t(),
           current_pos: non_neg_integer()
         }
   defstruct [:text, :current_pos]
 
   alias MonkeyInterpreter.Token
 
-  # NOTE: here, "ch" must be an integer representing the utf8 codepoint for the character. "ch" is not a binary/string.
+  # NOTE: here, "ch" must be an integer representing the utf8 codepoint for the character. "ch" is not a string.
   defguard is_letter?(ch) when ch in ?a..?z or ch in ?A..?Z
   defguard is_whitespace?(ch) when ch in [?\s, ?\t, ?\n, ?\r]
   defguard is_digit?(ch) when ch in ?0..?9
 
-  @spec init(binary()) :: t()
+  @spec init(String.t()) :: t()
   def init(text), do: %__MODULE__{text: text, current_pos: 0}
 
   # Given a Lexer, read off all the tokens until you reach an :eof token. Include the eof token in the return.
@@ -52,7 +52,7 @@ defmodule MonkeyInterpreter.Lexer do
   end
 
   # Given a string, read one Token from the beginning and return it
-  @spec lex_token(binary()) :: Token.t()
+  @spec lex_token(String.t()) :: Token.t()
   # Single char tokens
   defp lex_token("+" <> _rest), do: Token.init(:plus, "+")
   defp lex_token("-" <> _rest), do: Token.init(:minus, "-")
@@ -100,7 +100,7 @@ defmodule MonkeyInterpreter.Lexer do
     Token.init(:illegal, nil)
   end
 
-  @spec lex_number(binary(), binary()) :: binary()
+  @spec lex_number(String.t(), String.t()) :: String.t()
   defp lex_number(text, acc \\ "")
 
   # Recurse if there's more in this number.
@@ -111,7 +111,7 @@ defmodule MonkeyInterpreter.Lexer do
   defp lex_number(_text, acc), do: acc
 
   # TODO similar to lex_number, this doesn't handle words with numbers in them.
-  @spec lex_word(binary(), binary()) :: binary()
+  @spec lex_word(String.t(), String.t()) :: String.t()
   defp lex_word(text, acc \\ "")
 
   # Recurse if there's more in this word.

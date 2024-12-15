@@ -30,14 +30,14 @@ defmodule MonkeyInterpreter.TokenType do
 end
 
 defmodule MonkeyInterpreter.Token do
+  @type t :: %__MODULE__{type: MonkeyInterpreter.TokenType.t(), literal: String.t() | nil}
   @enforce_keys [:type, :literal]
   defstruct @enforce_keys
-  @type t :: %__MODULE__{type: TokenType.t(), literal: binary() | nil}
 
-  @spec init(TokenType.t(), binary() | nil) :: t()
+  @spec init(MonkeyInterpreter.TokenType.t(), String.t() | nil) :: t()
   def init(type, literal), do: %__MODULE__{type: type, literal: literal}
 
-  @spec keywords() :: %{binary() => t()}
+  @spec keywords() :: %{String.t() => t()}
   def keywords() do
     %{
       "fn" => __MODULE__.init(:function, "fn"),
