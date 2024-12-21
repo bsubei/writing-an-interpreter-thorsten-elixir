@@ -1,7 +1,6 @@
-FROM mcr.microsoft.com/devcontainers/base:debian
+FROM hexpm/elixir:1.18.0-erlang-27.2-debian-bullseye-20241202-slim
 
-
-# Install dependencies and Erlang/Elixir
+# Install dependencies
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive && apt-get -y install \
     git \
     wget \
@@ -11,18 +10,11 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive && apt-get -y instal
     inotify-tools \
     readline-common \
     libreadline8 \
-    erlang-dev erlang-dialyzer elixir \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-
-# Install hex and rebar
-RUN mix local.hex --force && \
-    mix local.rebar --force
-
 # Configure Git to trust all workspaces
 RUN git config --global --add safe.directory '*'
-
 
 # Configure Git to use less as pager with proper settings
 RUN git config --global core.pager 'less -R' && \
@@ -36,7 +28,3 @@ ENV LESSOPEN="|lesspipe.sh %s"
 # Copy configuration files
 COPY .bashrc /root/.bashrc
 COPY .inputrc /root/.inputrc
-
-
-# Set working directory
-WORKDIR /workspace
