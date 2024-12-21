@@ -21,7 +21,7 @@ defmodule ParserTest do
 
       case program.statements |> List.first() do
         {:let, stmt} ->
-          assert stmt.name == expected_identifier
+          assert stmt.identifier.literal == expected_identifier
           # assert stmt.value == expected_value
       end
     end)
@@ -46,5 +46,18 @@ defmodule ParserTest do
           # assert stmt.return_value == ???
       end
     end)
+  end
+
+  test "parser can parse identifier expression statements" do
+    program = "foobar;" |> Lexer.init() |> Parser.init() |> Parser.parse_program()
+    assert length(program.statements) == 1
+
+    case program.statements |> List.first() do
+      {:expression, stmt} ->
+        case stmt.expression do
+          {:identifier, identifier} ->
+            assert identifier.literal == "foobar"
+        end
+    end
   end
 end
