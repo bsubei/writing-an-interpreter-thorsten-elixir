@@ -1,14 +1,5 @@
 defmodule MonkeyInterpreter.Parser do
-  alias MonkeyInterpreter.{Lexer, Token}
-
-  alias MonkeyInterpreter.Ast.{
-    Program,
-    LetStatement,
-    Expression,
-    ReturnStatement,
-    ExpressionStatement,
-    Statement
-  }
+  alias MonkeyInterpreter.{Ast, Lexer, Token}
 
   @type t :: %__MODULE__{lexer: Lexer.t()}
   @enforce_keys [:lexer]
@@ -41,15 +32,15 @@ defmodule MonkeyInterpreter.Parser do
   @spec init(Lexer.t()) :: t()
   def init(lexer), do: %__MODULE__{lexer: lexer}
 
-  @spec parse_program(t()) :: Program.t()
+  @spec parse_program(t()) :: Ast.Program.t()
   def parse_program(state) do
     tokens = state.lexer |> Lexer.all_tokens()
-    %Program{statements: parse_tokens(tokens)}
+    %Ast.Program{statements: parse_tokens(tokens)}
   end
 
   # Parse all the tokens until we encounter the end of file as the last token.
-  @spec parse_tokens(list(Token.t()), list(Statement.t())) ::
-          list(Statement.t())
+  @spec parse_tokens(list(Token.t()), list(Ast.Statement.t())) ::
+          list(Ast.Statement.t())
   defp parse_tokens(tokens, acc \\ [])
   defp parse_tokens([%Token{type: :eof}], acc), do: acc
 
@@ -76,7 +67,8 @@ defmodule MonkeyInterpreter.Parser do
     parse_tokens(rest, new_acc)
   end
 
-  @spec parse_let_statement(list(Token.t())) :: {Statement.t(), list(Token.t())}
+  @spec parse_let_statement(list(Token.t())) :: {Ast.Statement.t(), list(Token.t())}
+  # @spec parse_let_statement(list(Token.t())) :: {{:let, Ast.LetStatement.t()}, list(Token.t())}
   defp parse_let_statement(tokens) do
     # We've already seen the "let".
     # Check that there's an identifier next.
@@ -85,44 +77,52 @@ defmodule MonkeyInterpreter.Parser do
     [%Token{type: :assign} | rest] = rest
     # Then an expression.
     # TODO hack for now until we can actually parse expressions.
-    [_expression, _semicolon | rest] = rest
+    [assigned_value_token, _semicolon | rest] = rest
     # TODO set the expression value and in the literal
     {
       {:let,
-       %LetStatement{
-         literal: "let #{identifier_token.literal} = TODO",
-         identifier: identifier_token,
-         value: %{}
+       %Ast.LetStatement{
+         literal: "let #{identifier_token.literal} = #{assigned_value_token.literal}",
+         identifier: %Ast.Identifier{token: identifier_token, value: identifier_token.literal},
+         assigned_value: {:integer, %Ast.IntegerLiteral{token: assigned_value_token, value: 42}}
        }},
       rest
     }
   end
 
-  @spec parse_return_statement(list(Token.t())) :: {Statement.t(), list(Token.t())}
+  @spec parse_return_statement(list(Token.t())) :: {Ast.Statement.t(), list(Token.t())}
   defp parse_return_statement(tokens) do
     # We've already seen the "return" keyword.
     # Grab the return value (an expression).
     # TODO hack for now until we can actually parse expressions.
-    [_expression, _semicolon | rest] = tokens
-    {{:return, %ReturnStatement{literal: "return TODO", return_value: %{}}}, rest}
+    [expression | rest] = tokens
+    [_semicolon | rest] = rest
+
+    # TODO actual return value
+    {{:return,
+      %Ast.ReturnStatement{
+        literal: "return #{expression.literal}",
+        return_value: {:integer, %Ast.IntegerLiteral{token: expression, value: 42}}
+      }}, rest}
   end
 
-  @spec parse_expression_statement(list(Token.t())) :: {Statement.t(), list(Token.t())}
+  @spec parse_expression_statement(list(Token.t())) :: {Ast.Statement.t(), list(Token.t())}
   defp parse_expression_statement(tokens) do
     # TODO pass in precedence
     # An expression statement is just an expression and then an optional semicolon.
     {expression, rest} = parse_expression(tokens)
 
+    # TODO wait I'm skipping semicolon twice, once here and once in parse_expression
     rest =
       case rest do
         [%Token{type: :semicolon} | rest] -> rest
         _ -> rest
       end
 
-    {{:expression, %ExpressionStatement{literal: "TODO", expression: expression}}, rest}
+    {{:expression, %Ast.ExpressionStatement{literal: "TODO", expression: expression}}, rest}
   end
 
-  @spec parse_expression(list(Token.t())) :: {Expression.t(), list(Token.t())}
+  @spec parse_expression(list(Token.t())) :: {Ast.Expression.t(), list(Token.t())}
   # Base case, stop recursing because we encountered the end of this expression (a semicolon).
   defp parse_expression([%Token{type: :semicolon} | rest]), do: {nil, rest}
   # Parse this token and continue to parse the rest of the expression.
@@ -131,7 +131,7 @@ defmodule MonkeyInterpreter.Parser do
     {parse_prefix(token), rest}
   end
 
-  @spec parse_prefix(Token.t()) :: Expression.t()
+  @spec parse_prefix(Token.t()) :: Ast.Expression.t()
   defp parse_prefix(%Token{type: :ident} = token) do
     parse_identifier(token)
   end
@@ -147,9 +147,14 @@ defmodule MonkeyInterpreter.Parser do
   #   nil
   # end
 
-  @spec parse_identifier(Token.t()) :: Expression.t()
-  def parse_identifier(token), do: {:identifier, token}
+  @spec parse_identifier(Token.t()) :: Ast.Expression.t()
+  def parse_identifier(token = %Token{}) do
+    {:identifier, %Ast.Identifier{token: token, value: token.literal}}
+  end
 
-  @spec parse_int(Token.t()) :: Expression.t()
-  def parse_int(token), do: {:integer, token}
+  @spec parse_int(Token.t()) :: Ast.Expression.t()
+  def parse_int(token) do
+    {integer, ""} = Integer.parse(token.literal)
+    {:integer, %Ast.IntegerLiteral{token: token, value: integer}}
+  end
 end
