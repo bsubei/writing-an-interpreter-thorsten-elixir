@@ -134,7 +134,7 @@ defmodule ParserTest do
     end
   end
 
-  test "parser can parse infix expressions" do
+  test "parser can parse basic infix expressions" do
     inputs_and_outputs = [
       {"42 + 5;", 42, Token.init(:plus, "+"), 5},
       {"5 - 5;", 5, Token.init(:minus, "-"), 5},
@@ -167,6 +167,105 @@ defmodule ParserTest do
                   assert integer_literal.value == expected_right_value
               end
           end
+      end
+    end)
+  end
+
+  test "parser can parse mixed infix/prefix expressions that rely on correct precedence rules" do
+    inputs = [
+      "-a * b",
+      "!-a",
+      "a + b + c",
+      "a * b + c",
+      "a - b * c"
+    ]
+
+    outputs = [
+      # "-a * b" should be parsed as "((-a) * b)", i.e. -a as an expression multiplied by b.
+      {:infix,
+       %Ast.Infix{
+         operator_token: Token.init(:asterisk, "*"),
+         left_expression:
+           {:prefix,
+            %Ast.Prefix{
+              operator_token: Token.init(:minus, "-"),
+              right_expression:
+                {:identifier, %Ast.Identifier{token: Token.init(:ident, "a"), value: "a"}}
+            }},
+         right_expression:
+           {:identifier, %Ast.Identifier{token: Token.init(:ident, "b"), value: "b"}}
+       }},
+      # "!-a" should be parsed as "(!(-a))"
+      {:prefix,
+       %Ast.Prefix{
+         operator_token: Token.init(:bang, "!"),
+         right_expression:
+           {:prefix,
+            %Ast.Prefix{
+              operator_token: Token.init(:minus, "-"),
+              right_expression:
+                {:identifier, %Ast.Identifier{token: Token.init(:ident, "a"), value: "a"}}
+            }}
+       }},
+      # "a + b + c" should be parsed as "((a + b) + c)"
+      {:infix,
+       %Ast.Infix{
+         operator_token: Token.init(:plus, "+"),
+         left_expression:
+           {:infix,
+            %Ast.Infix{
+              operator_token: Token.init(:plus, "+"),
+              left_expression:
+                {:identifier, %Ast.Identifier{token: Token.init(:ident, "a"), value: "a"}},
+              right_expression:
+                {:identifier, %Ast.Identifier{token: Token.init(:ident, "b"), value: "b"}}
+            }},
+         right_expression:
+           {:identifier, %Ast.Identifier{token: Token.init(:ident, "c"), value: "c"}}
+       }},
+      # "a * b + c" should be parsed as "((a * b) + c)"
+      {:infix,
+       %Ast.Infix{
+         operator_token: Token.init(:plus, "+"),
+         left_expression:
+           {:infix,
+            %Ast.Infix{
+              operator_token: Token.init(:asterisk, "*"),
+              left_expression:
+                {:identifier, %Ast.Identifier{token: Token.init(:ident, "a"), value: "a"}},
+              right_expression:
+                {:identifier, %Ast.Identifier{token: Token.init(:ident, "b"), value: "b"}}
+            }},
+         right_expression:
+           {:identifier, %Ast.Identifier{token: Token.init(:ident, "c"), value: "c"}}
+       }},
+      # "a - b * c" should be parsed as "(a - (b * c))"
+      {:infix,
+       %Ast.Infix{
+         operator_token: Token.init(:minus, "-"),
+         left_expression:
+           {:identifier, %Ast.Identifier{token: Token.init(:ident, "a"), value: "a"}},
+         right_expression:
+           {:infix,
+            %Ast.Infix{
+              operator_token: Token.init(:asterisk, "*"),
+              left_expression:
+                {:identifier, %Ast.Identifier{token: Token.init(:ident, "b"), value: "b"}},
+              right_expression:
+                {:identifier, %Ast.Identifier{token: Token.init(:ident, "c"), value: "c"}}
+            }}
+       }}
+    ]
+
+    Enum.zip(inputs, outputs)
+    |> Enum.each(fn {input, expected_output} ->
+      program = input |> Lexer.init() |> Parser.init() |> Parser.parse_program()
+
+      assert length(program.statements) == 1
+
+      case program.statements |> List.first() do
+        {:expression_statement, stmt} ->
+          assert stmt.expression == expected_output
       end
     end)
   end
