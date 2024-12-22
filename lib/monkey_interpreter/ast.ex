@@ -14,7 +14,7 @@ defmodule MonkeyInterpreter.Ast do
     @type t ::
             {:let, Ast.LetStatement.t()}
             | {:return, Ast.ReturnStatement.t()}
-            | {:expression, Ast.ExpressionStatement.t()}
+            | {:expression_statement, Ast.ExpressionStatement.t()}
   end
 
   # Each let statement has the identifier and the value to be assigned. The literal is used for debugging only.
@@ -49,6 +49,7 @@ defmodule MonkeyInterpreter.Ast do
             | {:boolean, Ast.Boolean.t()}
             | {:integer, Ast.IntegerLiteral.t()}
             | {:prefix, Ast.Prefix.t()}
+            | {:infix, Ast.Infix.t()}
   end
 
   # An identifier is a kind of expression and consists of only a token, always with an :ident type.
@@ -71,10 +72,20 @@ defmodule MonkeyInterpreter.Ast do
     defstruct @enforce_keys
   end
 
-  # A Prefix expression contains the token of the prefix and the right expression, which could be any of the expression types.
+  # A Prefix expression contains the operator token and the "right" expression, which could be any of the expression types.
   defmodule Prefix do
-    @type t :: %__MODULE__{token: Token.t(), right_expression: Ast.Expression.t()}
-    @enforce_keys [:token, :right_expression]
+    @type t :: %__MODULE__{operator_token: Token.t(), right_expression: Ast.Expression.t()}
+    @enforce_keys [:operator_token, :right_expression]
+    defstruct @enforce_keys
+  end
+
+  defmodule Infix do
+    @type t :: %__MODULE__{
+            operator_token: Token.t(),
+            left_expression: Ast.Expression.t(),
+            right_expression: Ast.Expression.t()
+          }
+    @enforce_keys [:operator_token, :left_expression, :right_expression]
     defstruct @enforce_keys
   end
 end

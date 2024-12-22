@@ -119,16 +119,37 @@ defmodule MonkeyInterpreter.Parser do
         _ -> rest
       end
 
-    {{:expression, %Ast.ExpressionStatement{literal: "TODO", expression: expression}}, rest}
+    {{:expression_statement, %Ast.ExpressionStatement{literal: "TODO", expression: expression}},
+     rest}
   end
 
   @spec parse_expression(list(Token.t())) :: {Ast.Expression.t(), list(Token.t())}
   # Base case, stop recursing because we encountered the end of this expression (a semicolon).
-  defp parse_expression([%Token{type: :semicolon} | rest]), do: {nil, rest}
+  # defp parse_expression([%Token{type: :semicolon} | rest]), do: {nil, rest}
   # Parse this token and continue to parse the rest of the expression.
   defp parse_expression([_token | _rest] = tokens) do
     # TODO use precedence and also parse infix
-    parse_prefix(tokens)
+    {expression, rest} = parse_prefix(tokens)
+
+    parse_infix_recurse(expression, rest)
+
+    # How the book does it:
+    # If a prefix fn exists, call it to get the left expression (this can recurse).
+    # Then, loop by calling the infix fn on the next token until either:
+    #  1. the next token has no infix fn (or is a semicolon), or
+    #  2. the given precedence >= the next token's precedence
+    # At this point, we return whatever resulting expression we got (from the infix loop, or the one prefix call).
+  end
+
+  defp parse_infix_recurse(expression, rest) do
+    {new_expr, rest} = parse_infix(expression, rest)
+
+    case new_expr do
+      # Stop recursing and return the expression we were given. This doesn't consume any tokens.
+      nil -> {expression, rest}
+      # Keep recursing because there's more infix operations.
+      _ -> parse_infix_recurse(new_expr, rest)
+    end
   end
 
   @spec parse_prefix(list(Token.t())) :: {Ast.Expression.t(), list(Token.t())}
@@ -148,7 +169,50 @@ defmodule MonkeyInterpreter.Parser do
     parse_prefix_expression(tokens)
   end
 
-  # All of the below parse_* functions are just helpers for parse_prefix and have the same spec.
+  @spec parse_infix(Ast.Expression.t(), list(Token.t())) ::
+          {Ast.Expression.t() | nil, list(Token.t())}
+  defp parse_infix(left_expression, [%Token{type: :semicolon} | rest]) do
+    {left_expression, rest}
+  end
+
+  defp parse_infix(left_expression, [%Token{type: :plus} | _rest] = tokens) do
+    parse_infix_expression(left_expression, tokens)
+  end
+
+  defp parse_infix(left_expression, [%Token{type: :minus} | _rest] = tokens) do
+    parse_infix_expression(left_expression, tokens)
+  end
+
+  defp parse_infix(left_expression, [%Token{type: :asterisk} | _rest] = tokens) do
+    parse_infix_expression(left_expression, tokens)
+  end
+
+  defp parse_infix(left_expression, [%Token{type: :slash} | _rest] = tokens) do
+    parse_infix_expression(left_expression, tokens)
+  end
+
+  defp parse_infix(left_expression, [%Token{type: :gt} | _rest] = tokens) do
+    parse_infix_expression(left_expression, tokens)
+  end
+
+  defp parse_infix(left_expression, [%Token{type: :lt} | _rest] = tokens) do
+    parse_infix_expression(left_expression, tokens)
+  end
+
+  defp parse_infix(left_expression, [%Token{type: :eq} | _rest] = tokens) do
+    parse_infix_expression(left_expression, tokens)
+  end
+
+  defp parse_infix(left_expression, [%Token{type: :not_eq} | _rest] = tokens) do
+    parse_infix_expression(left_expression, tokens)
+  end
+
+  # If the current token does not define an infix fn, return nil and don't consume any of the tokens.
+  defp parse_infix(_left_expression, tokens) do
+    {nil, tokens}
+  end
+
+  # All of the below parse_* functions are just helpers for parse_prefix and have the same spec except for never returning nil.
   defp parse_identifier([token | rest]) do
     expression = {:identifier, %Ast.Identifier{token: token, value: token.literal}}
     {expression, rest}
@@ -163,12 +227,22 @@ defmodule MonkeyInterpreter.Parser do
   defp parse_prefix_expression([token | rest]) do
     # Recurse into the right-hand expression.
     {right_expression, rest} = parse_expression(rest)
-    expression = {:prefix, %Ast.Prefix{token: token, right_expression: right_expression}}
+    expression = {:prefix, %Ast.Prefix{operator_token: token, right_expression: right_expression}}
     {expression, rest}
   end
 
-  # @spec parse_infix(TokenType.t()) :: nil
-  # defp parse_infix(:ident) do
-  #   nil
-  # end
+  defp parse_infix_expression(left_expression, [operator_token | rest]) do
+    # Recurse into the right-hand expression.
+    {right_expression, rest} = parse_expression(rest)
+
+    expression =
+      {:infix,
+       %Ast.Infix{
+         operator_token: operator_token,
+         left_expression: left_expression,
+         right_expression: right_expression
+       }}
+
+    {expression, rest}
+  end
 end

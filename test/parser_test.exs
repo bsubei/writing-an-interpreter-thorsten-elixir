@@ -61,7 +61,7 @@ defmodule ParserTest do
     assert length(program.statements) == 1
 
     case program.statements |> List.first() do
-      {:expression, stmt} ->
+      {:expression_statement, stmt} ->
         case stmt.expression do
           {:identifier, expression} ->
             assert expression.token == %Token{type: :ident, literal: "foobar"}
@@ -75,7 +75,7 @@ defmodule ParserTest do
     assert length(program.statements) == 1
 
     case program.statements |> List.first() do
-      {:expression, stmt} ->
+      {:expression_statement, stmt} ->
         case stmt.expression do
           {:integer, integer_literal} ->
             assert integer_literal.token == %Token{type: :int, literal: "5"}
@@ -84,31 +84,13 @@ defmodule ParserTest do
     end
   end
 
-  test "parser can parse prefix expressions" do
-    inputs_and_outputs = [{"!5;", "!", 5}, {"-15;", "-", 15}]
-
-    inputs_and_outputs
-    |> Enum.each(fn {input, expected_operator, expected_value} ->
-      program = input |> Lexer.init() |> Parser.init() |> Parser.parse_program()
-      assert length(program.statements) == 1
-
-      case program.statements |> List.first() do
-        {:expression, stmt} ->
-          case stmt.expression do
-            {:prefix, prefix_expression} ->
-              assert prefix_expression.token.literal == expected_operator
-
-              case prefix_expression.right_expression do
-                {:integer, integer_literal} -> assert integer_literal.value == expected_value
-              end
-          end
-      end
-    end)
-  end
-
   test "parser can parse nested prefix expressions" do
-    # Same as the previous test, except we nest the prefix operator a variable number of times.
-    inputs_and_outputs = [{"!!5;", "!", 5, 2}, {"--15;", "-", 15, 2}, {"!!!!42;", "!", 42, 4}]
+    inputs_and_outputs = [
+      {"!5;", Token.init(:bang, "!"), 5, 1},
+      {"!!5;", Token.init(:bang, "!"), 5, 2},
+      {"--15;", Token.init(:minus, "-"), 15, 2},
+      {"!!!!42;", Token.init(:bang, "!"), 42, 4}
+    ]
 
     inputs_and_outputs
     |> Enum.each(fn {input, expected_operator, expected_value, num_nesting} ->
@@ -116,7 +98,7 @@ defmodule ParserTest do
       assert length(program.statements) == 1
 
       case program.statements |> List.first() do
-        {:expression, stmt} ->
+        {:expression_statement, stmt} ->
           check_nested_expected_expression(
             stmt.expression,
             expected_operator,
@@ -141,7 +123,7 @@ defmodule ParserTest do
        ) do
     case expression do
       {:prefix, prefix_expression} ->
-        assert prefix_expression.token.literal == expected_operator
+        assert prefix_expression.operator_token == expected_operator
 
         check_nested_expected_expression(
           prefix_expression.right_expression,
@@ -150,5 +132,42 @@ defmodule ParserTest do
           num_nesting_remaining - 1
         )
     end
+  end
+
+  test "parser can parse infix expressions" do
+    inputs_and_outputs = [
+      {"42 + 5;", 42, Token.init(:plus, "+"), 5},
+      {"5 - 5;", 5, Token.init(:minus, "-"), 5},
+      {"5 * 5;", 5, Token.init(:asterisk, "*"), 5},
+      {"5 / 5;", 5, Token.init(:slash, "/"), 5},
+      {"5 > 5;", 5, Token.init(:gt, ">"), 5},
+      {"5 < 5;", 5, Token.init(:lt, "<"), 5},
+      {"5 == 5;", 5, Token.init(:eq, "=="), 5},
+      {"5 != 5;", 5, Token.init(:not_eq, "!="), 5}
+    ]
+
+    inputs_and_outputs
+    |> Enum.each(fn {input, expected_left_value, expected_operator, expected_right_value} ->
+      program = input |> Lexer.init() |> Parser.init() |> Parser.parse_program()
+
+      assert length(program.statements) == 1
+
+      case program.statements |> List.first() do
+        {:expression_statement, stmt} ->
+          case stmt.expression do
+            {:infix, infix_expression} ->
+              assert infix_expression.operator_token == expected_operator
+
+              case infix_expression.left_expression do
+                {:integer, integer_literal} -> assert integer_literal.value == expected_left_value
+              end
+
+              case infix_expression.right_expression do
+                {:integer, integer_literal} ->
+                  assert integer_literal.value == expected_right_value
+              end
+          end
+      end
+    end)
   end
 end
