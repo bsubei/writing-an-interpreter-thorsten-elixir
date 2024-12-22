@@ -105,4 +105,50 @@ defmodule ParserTest do
       end
     end)
   end
+
+  test "parser can parse nested prefix expressions" do
+    # Same as the previous test, except we nest the prefix operator a variable number of times.
+    inputs_and_outputs = [{"!!5;", "!", 5, 2}, {"--15;", "-", 15, 2}, {"!!!!42;", "!", 42, 4}]
+
+    inputs_and_outputs
+    |> Enum.each(fn {input, expected_operator, expected_value, num_nesting} ->
+      program = input |> Lexer.init() |> Parser.init() |> Parser.parse_program()
+      assert length(program.statements) == 1
+
+      case program.statements |> List.first() do
+        {:expression, stmt} ->
+          check_nested_expected_expression(
+            stmt.expression,
+            expected_operator,
+            expected_value,
+            num_nesting
+          )
+      end
+    end)
+  end
+
+  defp check_nested_expected_expression(expression, _expected_operator, expected_value, 0) do
+    case expression do
+      {:integer, integer_literal} -> assert integer_literal.value == expected_value
+    end
+  end
+
+  defp check_nested_expected_expression(
+         expression,
+         expected_operator,
+         expected_value,
+         num_nesting_remaining
+       ) do
+    case expression do
+      {:prefix, prefix_expression} ->
+        assert prefix_expression.token.literal == expected_operator
+
+        check_nested_expected_expression(
+          prefix_expression.right_expression,
+          expected_operator,
+          expected_value,
+          num_nesting_remaining - 1
+        )
+    end
+  end
 end
