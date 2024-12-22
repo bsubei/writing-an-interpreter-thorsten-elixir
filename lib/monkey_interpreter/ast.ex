@@ -48,6 +48,7 @@ defmodule MonkeyInterpreter.Ast do
             {:identifier, Ast.Identifier.t()}
             | {:boolean, Ast.Boolean.t()}
             | {:integer, Ast.IntegerLiteral.t()}
+            | {:prefix, Ast.Prefix.t()}
   end
 
   # An identifier is a kind of expression and consists of only a token, always with an :ident type.
@@ -67,6 +68,13 @@ defmodule MonkeyInterpreter.Ast do
   defmodule IntegerLiteral do
     @type t :: %__MODULE__{token: Token.t(), value: integer()}
     @enforce_keys [:token, :value]
+    defstruct @enforce_keys
+  end
+
+  # A Prefix expression contains the token of the prefix and the right expression, which could be any of the expression types.
+  defmodule Prefix do
+    @type t :: %__MODULE__{token: Token.t(), right_expression: Ast.Expression.t()}
+    @enforce_keys [:token, :right_expression]
     defstruct @enforce_keys
   end
 end

@@ -83,4 +83,26 @@ defmodule ParserTest do
         end
     end
   end
+
+  test "parser can parse prefix expressions" do
+    inputs_and_outputs = [{"!5;", "!", 5}, {"-15;", "-", 15}]
+
+    inputs_and_outputs
+    |> Enum.each(fn {input, expected_operator, expected_value} ->
+      program = input |> Lexer.init() |> Parser.init() |> Parser.parse_program()
+      assert length(program.statements) == 1
+
+      case program.statements |> List.first() do
+        {:expression, stmt} ->
+          case stmt.expression do
+            {:prefix, prefix_expression} ->
+              assert prefix_expression.token.literal == expected_operator
+
+              case prefix_expression.right_expression do
+                {:integer, integer_literal} -> assert integer_literal.value == expected_value
+              end
+          end
+      end
+    end)
+  end
 end

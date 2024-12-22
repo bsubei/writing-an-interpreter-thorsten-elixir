@@ -126,35 +126,49 @@ defmodule MonkeyInterpreter.Parser do
   # Base case, stop recursing because we encountered the end of this expression (a semicolon).
   defp parse_expression([%Token{type: :semicolon} | rest]), do: {nil, rest}
   # Parse this token and continue to parse the rest of the expression.
-  defp parse_expression([token | rest]) do
-    # TODO use precedence and actually recurse
-    {parse_prefix(token), rest}
+  defp parse_expression([_token | _rest] = tokens) do
+    # TODO use precedence and also parse infix
+    parse_prefix(tokens)
   end
 
-  @spec parse_prefix(Token.t()) :: Ast.Expression.t()
-  defp parse_prefix(%Token{type: :ident} = token) do
-    parse_identifier(token)
+  @spec parse_prefix(list(Token.t())) :: {Ast.Expression.t(), list(Token.t())}
+  defp parse_prefix([%Token{type: :ident} | _rest] = tokens) do
+    parse_identifier(tokens)
   end
 
-  defp parse_prefix(%Token{type: :int} = token) do
-    parse_int(token)
+  defp parse_prefix([%Token{type: :int} | _rest] = tokens) do
+    parse_int(tokens)
   end
 
-  defp parse_prefix(_token), do: raise("Unimplemented")
+  defp parse_prefix([%Token{type: :minus} | _rest] = tokens) do
+    parse_prefix_expression(tokens)
+  end
+
+  defp parse_prefix([%Token{type: :bang} | _rest] = tokens) do
+    parse_prefix_expression(tokens)
+  end
+
+  # All of the below parse_* functions are just helpers for parse_prefix and have the same spec.
+  defp parse_identifier([token | rest]) do
+    expression = {:identifier, %Ast.Identifier{token: token, value: token.literal}}
+    {expression, rest}
+  end
+
+  defp parse_int([token | rest]) do
+    {integer, ""} = Integer.parse(token.literal)
+    expression = {:integer, %Ast.IntegerLiteral{token: token, value: integer}}
+    {expression, rest}
+  end
+
+  defp parse_prefix_expression([token | rest]) do
+    # Recurse into the right-hand expression.
+    {right_expression, rest} = parse_expression(rest)
+    expression = {:prefix, %Ast.Prefix{token: token, right_expression: right_expression}}
+    {expression, rest}
+  end
 
   # @spec parse_infix(TokenType.t()) :: nil
   # defp parse_infix(:ident) do
   #   nil
   # end
-
-  @spec parse_identifier(Token.t()) :: Ast.Expression.t()
-  def parse_identifier(token = %Token{}) do
-    {:identifier, %Ast.Identifier{token: token, value: token.literal}}
-  end
-
-  @spec parse_int(Token.t()) :: Ast.Expression.t()
-  def parse_int(token) do
-    {integer, ""} = Integer.parse(token.literal)
-    {:integer, %Ast.IntegerLiteral{token: token, value: integer}}
-  end
 end
