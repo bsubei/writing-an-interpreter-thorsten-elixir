@@ -1,33 +1,9 @@
 defmodule MonkeyInterpreter.Parser do
-  alias MonkeyInterpreter.{Ast, Lexer, Token}
+  alias MonkeyInterpreter.{Ast, Lexer, Token, TokenPrecedence}
 
   @type t :: %__MODULE__{lexer: Lexer.t()}
   @enforce_keys [:lexer]
   defstruct @enforce_keys
-
-  # This defines the precedence ordering of expressions in the Monkey language.
-  # TODO explain why :lowest isn't called :higest instead
-  @precedences [:lowest, :equals, :lessgreater, :sum, :product, :prefix, :call]
-  @spec precedence_compare(atom(), atom()) :: :lt | :gt | :eq | nil
-  def precedence_compare(left, right) do
-    case Enum.find_index(@precedences, &(&1 == left)) do
-      nil ->
-        nil
-
-      left_i ->
-        case Enum.find_index(@precedences, &(&1 == right)) do
-          nil ->
-            nil
-
-          right_i ->
-            cond do
-              left_i < right_i -> :lt
-              left_i == right_i -> :eq
-              left_i > right_i -> :gt
-            end
-        end
-    end
-  end
 
   @spec init(Lexer.t()) :: t()
   def init(lexer), do: %__MODULE__{lexer: lexer}
@@ -110,7 +86,7 @@ defmodule MonkeyInterpreter.Parser do
   defp parse_expression_statement(tokens) do
     # TODO pass in precedence
     # An expression statement is just an expression and then an optional semicolon.
-    {expression, rest} = parse_expression(tokens)
+    {expression, rest} = parse_expression(tokens, :lowest)
 
     # TODO wait I'm skipping semicolon twice, once here and once in parse_expression
     rest =
@@ -123,15 +99,17 @@ defmodule MonkeyInterpreter.Parser do
      rest}
   end
 
-  @spec parse_expression(list(Token.t())) :: {Ast.Expression.t(), list(Token.t())}
+  @spec parse_expression(list(Token.t()), TokenPrecedence.t()) ::
+          {Ast.Expression.t(), list(Token.t())}
   # Base case, stop recursing because we encountered the end of this expression (a semicolon).
   # defp parse_expression([%Token{type: :semicolon} | rest]), do: {nil, rest}
   # Parse this token and continue to parse the rest of the expression.
-  defp parse_expression([_token | _rest] = tokens) do
-    # TODO use precedence and also parse infix
+  defp parse_expression([_token | _rest] = tokens, precedence) do
+    # Always parse one prefix expression.
     {expression, rest} = parse_prefix(tokens)
 
-    parse_infix_recurse(expression, rest)
+    # Then, parse however many infix expressions still exist.
+    parse_infix_recurse(expression, rest, precedence)
 
     # How the book does it:
     # If a prefix fn exists, call it to get the left expression (this can recurse).
@@ -141,14 +119,15 @@ defmodule MonkeyInterpreter.Parser do
     # At this point, we return whatever resulting expression we got (from the infix loop, or the one prefix call).
   end
 
-  defp parse_infix_recurse(expression, rest) do
-    {new_expr, rest} = parse_infix(expression, rest)
+  defp parse_infix_recurse(expression, rest, precedence) do
+    {new_expr, rest} = parse_infix_expression(expression, rest, precedence)
 
     case new_expr do
       # Stop recursing and return the expression we were given. This doesn't consume any tokens.
       nil -> {expression, rest}
       # Keep recursing because there's more infix operations.
-      _ -> parse_infix_recurse(new_expr, rest)
+      # TODO I think this precedence is wrong. We probably have to get the new precedence from the returned expression
+      _ -> parse_infix_recurse(new_expr, rest, precedence)
     end
   end
 
@@ -169,50 +148,49 @@ defmodule MonkeyInterpreter.Parser do
     parse_prefix_expression(tokens)
   end
 
-  @spec parse_infix(Ast.Expression.t(), list(Token.t())) ::
-          {Ast.Expression.t() | nil, list(Token.t())}
-  defp parse_infix(left_expression, [%Token{type: :semicolon} | rest]) do
-    {left_expression, rest}
-  end
+  # @spec parse_infix(Ast.Expression.t(), list(Token.t()), TokenPrecedence.t()) ::
+  #         {Ast.Expression.t() | nil, list(Token.t())}
+  # defp parse_infix(left_expression, [%Token{type: :semicolon} | rest], _precedence) do
+  #   {left_expression, rest}
+  # end
 
-  defp parse_infix(left_expression, [%Token{type: :plus} | _rest] = tokens) do
-    parse_infix_expression(left_expression, tokens)
-  end
+  # defp parse_infix(left_expression, [%Token{type: :plus} | _rest] = tokens, precedence) do
+  #   parse_infix_expression(left_expression, tokens, precedence)
+  # end
 
-  defp parse_infix(left_expression, [%Token{type: :minus} | _rest] = tokens) do
-    parse_infix_expression(left_expression, tokens)
-  end
+  # defp parse_infix(left_expression, [%Token{type: :minus} | _rest] = tokens, precedence) do
+  #   parse_infix_expression(left_expression, tokens, precedence)
+  # end
 
-  defp parse_infix(left_expression, [%Token{type: :asterisk} | _rest] = tokens) do
-    parse_infix_expression(left_expression, tokens)
-  end
+  # defp parse_infix(left_expression, [%Token{type: :asterisk} | _rest] = tokens, precedence) do
+  #   parse_infix_expression(left_expression, tokens, precedence)
+  # end
 
-  defp parse_infix(left_expression, [%Token{type: :slash} | _rest] = tokens) do
-    parse_infix_expression(left_expression, tokens)
-  end
+  # defp parse_infix(left_expression, [%Token{type: :slash} | _rest] = tokens, precedence) do
+  #   parse_infix_expression(left_expression, tokens, precedence)
+  # end
 
-  defp parse_infix(left_expression, [%Token{type: :gt} | _rest] = tokens) do
-    parse_infix_expression(left_expression, tokens)
-  end
+  # defp parse_infix(left_expression, [%Token{type: :gt} | _rest] = tokens, precedence) do
+  #   parse_infix_expression(left_expression, tokens, precedence)
+  # end
 
-  defp parse_infix(left_expression, [%Token{type: :lt} | _rest] = tokens) do
-    parse_infix_expression(left_expression, tokens)
-  end
+  # defp parse_infix(left_expression, [%Token{type: :lt} | _rest] = tokens, precedence) do
+  #   parse_infix_expression(left_expression, tokens, precedence)
+  # end
 
-  defp parse_infix(left_expression, [%Token{type: :eq} | _rest] = tokens) do
-    parse_infix_expression(left_expression, tokens)
-  end
+  # defp parse_infix(left_expression, [%Token{type: :eq} | _rest] = tokens, precedence) do
+  #   parse_infix_expression(left_expression, tokens, precedence)
+  # end
 
-  defp parse_infix(left_expression, [%Token{type: :not_eq} | _rest] = tokens) do
-    parse_infix_expression(left_expression, tokens)
-  end
+  # defp parse_infix(left_expression, [%Token{type: :not_eq} | _rest] = tokens, precedence) do
+  #   parse_infix_expression(left_expression, tokens, precedence)
+  # end
 
-  # If the current token does not define an infix fn, return nil and don't consume any of the tokens.
-  defp parse_infix(_left_expression, tokens) do
-    {nil, tokens}
-  end
+  # # If the current token does not define an infix fn, return nil and don't consume any of the tokens.
+  # defp parse_infix(_left_expression, tokens, _precedence) do
+  #   {nil, tokens}
+  # end
 
-  # All of the below parse_* functions are just helpers for parse_prefix and have the same spec except for never returning nil.
   defp parse_identifier([token | rest]) do
     expression = {:identifier, %Ast.Identifier{token: token, value: token.literal}}
     {expression, rest}
@@ -226,23 +204,33 @@ defmodule MonkeyInterpreter.Parser do
 
   defp parse_prefix_expression([token | rest]) do
     # Recurse into the right-hand expression.
-    {right_expression, rest} = parse_expression(rest)
+    {right_expression, rest} = parse_expression(rest, :prefix)
     expression = {:prefix, %Ast.Prefix{operator_token: token, right_expression: right_expression}}
     {expression, rest}
   end
 
-  defp parse_infix_expression(left_expression, [operator_token | rest]) do
-    # Recurse into the right-hand expression.
-    {right_expression, rest} = parse_expression(rest)
+  @spec parse_infix_expression(Ast.Expression.t(), list(Token.t()), TokenPrecedence.t()) ::
+          {Ast.Expression.t() | nil, list(Token.t())}
+  defp parse_infix_expression(left_expression, [operator_token | rest] = tokens, precedence) do
+    cond do
+      # Recurse into the right-hand expression using the precedence of the infix operator token.
+      operator_token.type in [:plus, :minus, :asterisk, :slash, :gt, :lt, :eq, :not_eq] ->
+        precedence = TokenPrecedence.from_token_type(operator_token.type)
+        {right_expression, rest} = parse_expression(rest, precedence)
 
-    expression =
-      {:infix,
-       %Ast.Infix{
-         operator_token: operator_token,
-         left_expression: left_expression,
-         right_expression: right_expression
-       }}
+        expression =
+          {:infix,
+           %Ast.Infix{
+             operator_token: operator_token,
+             left_expression: left_expression,
+             right_expression: right_expression
+           }}
 
-    {expression, rest}
+        {expression, rest}
+
+      # This token is not actually an infix operator. Return nil and don't consume any tokens.
+      true ->
+        {nil, tokens}
+    end
   end
 end
