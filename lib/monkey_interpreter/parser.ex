@@ -212,25 +212,35 @@ defmodule MonkeyInterpreter.Parser do
   @spec parse_infix_expression(Ast.Expression.t(), list(Token.t()), TokenPrecedence.t()) ::
           {Ast.Expression.t() | nil, list(Token.t())}
   defp parse_infix_expression(left_expression, [operator_token | rest] = tokens, precedence) do
-    cond do
+    operator_precedence = TokenPrecedence.from_token_type(operator_token.type)
+
+    is_precedence_satisfied =
+      case operator_precedence do
+        nil -> false
+        _ -> TokenPrecedence.compare(precedence, operator_precedence) == :lt
+      end
+
+    operator_is_infix =
+      operator_token.type in [:plus, :minus, :asterisk, :slash, :gt, :lt, :eq, :not_eq]
+
+    if is_precedence_satisfied and operator_is_infix do
+      precedence = TokenPrecedence.from_token_type(operator_token.type)
+
       # Recurse into the right-hand expression using the precedence of the infix operator token.
-      operator_token.type in [:plus, :minus, :asterisk, :slash, :gt, :lt, :eq, :not_eq] ->
-        precedence = TokenPrecedence.from_token_type(operator_token.type)
-        {right_expression, rest} = parse_expression(rest, precedence)
+      {right_expression, rest} = parse_expression(rest, precedence)
 
-        expression =
-          {:infix,
-           %Ast.Infix{
-             operator_token: operator_token,
-             left_expression: left_expression,
-             right_expression: right_expression
-           }}
+      expression =
+        {:infix,
+         %Ast.Infix{
+           operator_token: operator_token,
+           left_expression: left_expression,
+           right_expression: right_expression
+         }}
 
-        {expression, rest}
-
-      # This token is not actually an infix operator. Return nil and don't consume any tokens.
-      true ->
-        {nil, tokens}
+      {expression, rest}
+    else
+      # This token either doesn't satisfy the precedence condition OR is not actually an infix operator. Return nil and don't consume any tokens.
+      {nil, tokens}
     end
   end
 end

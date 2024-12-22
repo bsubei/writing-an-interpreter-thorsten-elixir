@@ -35,7 +35,7 @@ defmodule MonkeyInterpreter.TokenPrecedence do
   # TODO explain why :lowest isn't called :highest instead
   @precedences [:lowest, :equals, :lessgreater, :sum, :product, :prefix, :call]
 
-  @spec from_token_type(MonkeyInterpreter.TokenType.t()) :: t()
+  @spec from_token_type(MonkeyInterpreter.TokenType.t()) :: t() | nil
   def from_token_type(token_type) do
     case token_type do
       :eq -> :equals
@@ -47,6 +47,7 @@ defmodule MonkeyInterpreter.TokenPrecedence do
       :slash -> :product
       :asterisk -> :product
       :lparen -> :call
+      _ -> nil
     end
   end
 
