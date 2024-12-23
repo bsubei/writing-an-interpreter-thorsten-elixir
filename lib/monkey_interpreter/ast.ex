@@ -18,6 +18,7 @@ defmodule MonkeyInterpreter.Ast do
             | {:block_statement, Ast.BlockStatement.t()}
   end
 
+  # TODO remove literal from everywhere except the tokens themselves.
   # Each let statement has the identifier and the value to be assigned. The literal is used for debugging only.
   defmodule LetStatement do
     @type t :: %__MODULE__{
@@ -49,7 +50,6 @@ defmodule MonkeyInterpreter.Ast do
     defstruct @enforce_keys
   end
 
-  # TODO more
   defmodule Expression do
     @type t ::
             {:identifier, Ast.Identifier.t()}
@@ -57,6 +57,7 @@ defmodule MonkeyInterpreter.Ast do
             | {:integer, Ast.IntegerLiteral.t()}
             | {:grouped, Ast.GroupedExpression.t()}
             | {:if, Ast.IfExpression.t()}
+            | {:function_literal, Ast.FunctionLiteral.t()}
             | {:prefix, Ast.Prefix.t()}
             | {:infix, Ast.Infix.t()}
   end
@@ -95,6 +96,15 @@ defmodule MonkeyInterpreter.Ast do
             alternative: Ast.BlockStatement.t() | nil
           }
     @enforce_keys [:condition, :consequence, :alternative]
+    defstruct @enforce_keys
+  end
+
+  defmodule FunctionLiteral do
+    @type t :: %__MODULE__{
+            parameters: list(Ast.Identifier.t()),
+            body: Ast.BlockStatement.t()
+          }
+    @enforce_keys [:parameters, :body]
     defstruct @enforce_keys
   end
 

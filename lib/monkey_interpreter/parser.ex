@@ -169,6 +169,10 @@ defmodule MonkeyInterpreter.Parser do
     parse_if_expression(tokens)
   end
 
+  defp parse_prefix([%Token{type: :function} | _rest] = tokens) do
+    parse_function_literal_expression(tokens)
+  end
+
   defp parse_prefix_expression([token | rest]) do
     # Recurse into the right-hand expression.
     {right_expression, rest} = parse_expression(rest, :prefix)
@@ -231,7 +235,7 @@ defmodule MonkeyInterpreter.Parser do
 
     {consequence, rest} = parse_block_statement(rest)
 
-    # TODO optionally, parse the alternative if the "else" exists.
+    # Parse the alternative if the "else" exists.
     {alternative, rest} =
       case rest do
         [%Token{type: :else} | rest] ->
@@ -247,5 +251,33 @@ defmodule MonkeyInterpreter.Parser do
        consequence: consequence,
        alternative: alternative
      }, rest}
+  end
+
+  defp parse_function_literal_expression([_fn_token | rest]) do
+    [%Token{type: :lparen} | rest] = rest
+    {parameters, rest} = parse_function_parameters(rest)
+
+    [%Token{type: :lbrace} | rest] = rest
+    {body, rest} = parse_block_statement(rest)
+
+    fn_literal = {:function_literal, %Ast.FunctionLiteral{parameters: parameters, body: body}}
+    {fn_literal, rest}
+  end
+
+  defp parse_function_parameters(tokens, acc \\ [])
+  defp parse_function_parameters([%Token{type: :rparen} | rest], acc), do: {acc, rest}
+
+  defp parse_function_parameters(tokens, acc) do
+    [%Token{type: :ident} = param_token | rest] = tokens
+    param = %Ast.Identifier{token: param_token, value: param_token.literal}
+    # Get rid of the subsequent comma if it exists (it doesn't exist for the last parameter).
+    rest =
+      case rest do
+        [%Token{type: :comma} | rest] -> rest
+        _ -> rest
+      end
+
+    new_acc = acc ++ [param]
+    parse_function_parameters(rest, new_acc)
   end
 end

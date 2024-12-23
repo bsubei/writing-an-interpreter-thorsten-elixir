@@ -32,7 +32,6 @@ end
 defmodule MonkeyInterpreter.TokenPrecedence do
   @type t :: :lowest | :equals | :lessgreater | :sum | :product | :prefix | :call
   # This defines the precedence ordering of expressions in the Monkey language.
-  # TODO explain why :lowest isn't called :highest instead
   @precedences [:lowest, :equals, :lessgreater, :sum, :product, :prefix, :call]
 
   @spec from_token_type(MonkeyInterpreter.TokenType.t()) :: t() | nil
