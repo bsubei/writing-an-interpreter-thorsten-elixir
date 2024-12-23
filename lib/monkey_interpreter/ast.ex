@@ -15,6 +15,7 @@ defmodule MonkeyInterpreter.Ast do
             {:let, Ast.LetStatement.t()}
             | {:return, Ast.ReturnStatement.t()}
             | {:expression_statement, Ast.ExpressionStatement.t()}
+            | {:block_statement, Ast.BlockStatement.t()}
   end
 
   # Each let statement has the identifier and the value to be assigned. The literal is used for debugging only.
@@ -42,6 +43,12 @@ defmodule MonkeyInterpreter.Ast do
     defstruct @enforce_keys
   end
 
+  defmodule BlockStatement do
+    @type t :: %__MODULE__{literal: String.t() | nil, statements: list(Ast.Statement.t())}
+    @enforce_keys [:literal, :statements]
+    defstruct @enforce_keys
+  end
+
   # TODO more
   defmodule Expression do
     @type t ::
@@ -49,6 +56,7 @@ defmodule MonkeyInterpreter.Ast do
             | {:boolean, Ast.Boolean.t()}
             | {:integer, Ast.IntegerLiteral.t()}
             | {:grouped, Ast.GroupedExpression.t()}
+            | {:if, Ast.IfExpression.t()}
             | {:prefix, Ast.Prefix.t()}
             | {:infix, Ast.Infix.t()}
   end
@@ -76,6 +84,17 @@ defmodule MonkeyInterpreter.Ast do
   defmodule GroupedExpression do
     @type t :: %__MODULE__{expression: Ast.Expression.t()}
     @enforce_keys [:expression]
+    defstruct @enforce_keys
+  end
+
+  # Note that "if" is an expression, not a statement.
+  defmodule IfExpression do
+    @type t :: %__MODULE__{
+            condition: Ast.Expression.t(),
+            consequence: Ast.BlockStatement.t(),
+            alternative: Ast.BlockStatement.t() | nil
+          }
+    @enforce_keys [:condition, :consequence, :alternative]
     defstruct @enforce_keys
   end
 

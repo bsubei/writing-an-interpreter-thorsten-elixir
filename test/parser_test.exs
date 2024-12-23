@@ -300,4 +300,106 @@ defmodule ParserTest do
       end
     end)
   end
+
+  test "parser can parse if expressions" do
+    inputs_and_outputs = [
+      {"if (x == 42) { 25 }",
+       %Ast.IfExpression{
+         condition:
+           {:infix,
+            %Ast.Infix{
+              operator_token: Token.init(:eq, "=="),
+              left_expression:
+                {:identifier, %Ast.Identifier{token: Token.init(:ident, "x"), value: "x"}},
+              right_expression:
+                {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "42"), value: 42}}
+            }},
+         consequence:
+           {:block_statement,
+            %Ast.BlockStatement{
+              literal: "unused",
+              statements: [
+                {:expression_statement,
+                 %Ast.ExpressionStatement{
+                   literal: "unused",
+                   expression:
+                     {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "25"), value: 25}}
+                 }}
+              ]
+            }},
+         alternative: nil
+       }},
+      {"if (x * 1 == y) { z * 5 } else { 0; 42 }",
+       %Ast.IfExpression{
+         condition:
+           {:infix,
+            %Ast.Infix{
+              operator_token: Token.init(:eq, "=="),
+              left_expression:
+                {:infix,
+                 %Ast.Infix{
+                   operator_token: Token.init(:asterisk, "*"),
+                   left_expression:
+                     {:identifier, %Ast.Identifier{token: Token.init(:ident, "x"), value: "x"}},
+                   right_expression:
+                     {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "1"), value: 1}}
+                 }},
+              right_expression:
+                {:identifier, %Ast.Identifier{token: Token.init(:ident, "y"), value: "y"}}
+            }},
+         consequence:
+           {:block_statement,
+            %Ast.BlockStatement{
+              literal: "unused",
+              statements: [
+                {:expression_statement,
+                 %Ast.ExpressionStatement{
+                   literal: "unused",
+                   expression:
+                     {:infix,
+                      %Ast.Infix{
+                        operator_token: Token.init(:asterisk, "*"),
+                        left_expression:
+                          {:identifier,
+                           %Ast.Identifier{token: Token.init(:ident, "z"), value: "z"}},
+                        right_expression:
+                          {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "5"), value: 5}}
+                      }}
+                 }}
+              ]
+            }},
+         alternative:
+           {:block_statement,
+            %Ast.BlockStatement{
+              literal: "unused",
+              statements: [
+                {:expression_statement,
+                 %Ast.ExpressionStatement{
+                   literal: "unused",
+                   expression:
+                     {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "0"), value: 0}}
+                 }},
+                {:expression_statement,
+                 %Ast.ExpressionStatement{
+                   literal: "unused",
+                   expression:
+                     {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "42"), value: 42}}
+                 }}
+              ]
+            }}
+       }}
+    ]
+
+    inputs_and_outputs
+    |> Enum.each(fn {input, expected_output} ->
+      program = input |> Lexer.init() |> Parser.init() |> Parser.parse_program()
+
+      assert length(program.statements) == 1
+
+      case program.statements |> List.first() do
+        {:expression_statement, stmt} ->
+          assert stmt.expression == expected_output
+      end
+    end)
+  end
 end

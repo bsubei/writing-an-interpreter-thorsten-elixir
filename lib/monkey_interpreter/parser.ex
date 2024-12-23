@@ -14,40 +14,22 @@ defmodule MonkeyInterpreter.Parser do
     %Ast.Program{statements: parse_tokens(tokens)}
   end
 
-  # Parse all the tokens until we encounter the end of file as the last token.
+  # Parse all the tokens into a list of statements, until we encounter the end of file as the last token.
   @spec parse_tokens(list(Token.t()), list(Ast.Statement.t())) ::
           list(Ast.Statement.t())
   defp parse_tokens(tokens, acc \\ [])
   defp parse_tokens([%Token{type: :eof}], acc), do: acc
 
-  # TODO if all these parse_tokens arms look the same, it may be better to get rid of the extra layer of indirection.
-
-  # This is a let statement. Parse its tokens into a statement, then continue parsing the rest of the tokens.
-  defp parse_tokens([%Token{type: :let} | rest], acc) do
-    {stmt, rest} = parse_let_statement(rest)
-    new_acc = acc ++ [stmt]
-    parse_tokens(rest, new_acc)
-  end
-
-  # This is a return statement. Parse its tokens into a statement, then continue parsing the rest of the tokens.
-  defp parse_tokens([%Token{type: :return} | rest], acc) do
-    {stmt, rest} = parse_return_statement(rest)
-    new_acc = acc ++ [stmt]
-    parse_tokens(rest, new_acc)
-  end
-
-  # In the general case, assume this is an expression statement.
   defp parse_tokens(tokens, acc) do
-    {stmt, rest} = parse_expression_statement(tokens)
+    {stmt, rest} = parse_statement(tokens)
     new_acc = acc ++ [stmt]
     parse_tokens(rest, new_acc)
   end
 
-  @spec parse_let_statement(list(Token.t())) :: {Ast.Statement.t(), list(Token.t())}
-  defp parse_let_statement(tokens) do
-    # We've already seen the "let".
+  @spec parse_statement(list(Token.t())) :: {Ast.Statement.t(), list(Token.t())}
+  defp parse_statement([%Token{type: :let} | rest]) do
     # Check that there's an identifier next.
-    [identifier_token = %Token{type: :ident} | rest] = tokens
+    [identifier_token = %Token{type: :ident} | rest] = rest
     # Then an equal sign.
     [%Token{type: :assign} | rest] = rest
     # Then an expression.
@@ -72,11 +54,9 @@ defmodule MonkeyInterpreter.Parser do
     }
   end
 
-  @spec parse_return_statement(list(Token.t())) :: {Ast.Statement.t(), list(Token.t())}
-  defp parse_return_statement(tokens) do
-    # We've already seen the "return" keyword.
+  defp parse_statement([%Token{type: :return} | rest]) do
     # Grab the return value (an expression).
-    {return_value, rest} = parse_expression(tokens, :lowest)
+    {return_value, rest} = parse_expression(rest, :lowest)
 
     # Skip over the semicolon if you see it.
     rest =
@@ -88,8 +68,8 @@ defmodule MonkeyInterpreter.Parser do
     {{:return, %Ast.ReturnStatement{literal: "unused", return_value: return_value}}, rest}
   end
 
-  @spec parse_expression_statement(list(Token.t())) :: {Ast.Statement.t(), list(Token.t())}
-  defp parse_expression_statement(tokens) do
+  # The general case, where we assume it's an expression statement
+  defp parse_statement(tokens) do
     # An expression statement is just an expression and then an optional semicolon.
     {expression, rest} = parse_expression(tokens, :lowest)
 
@@ -102,6 +82,24 @@ defmodule MonkeyInterpreter.Parser do
 
     {{:expression_statement, %Ast.ExpressionStatement{literal: "unused", expression: expression}},
      rest}
+  end
+
+  @spec parse_block_statement(list(Token.t()), list(Ast.Statement.t())) ::
+          {Ast.Statement.t(), list(Token.t())}
+  # Recursively call while accumulating parsed statements, until we reach an :rbrace.
+  defp parse_block_statement(tokens, acc \\ [])
+
+  defp parse_block_statement([%Token{type: :rbrace} | rest], acc) do
+    {
+      {:block_statement, %Ast.BlockStatement{literal: "unused", statements: acc}},
+      rest
+    }
+  end
+
+  defp parse_block_statement(tokens, acc) do
+    {stmt, rest} = parse_statement(tokens)
+    new_acc = acc ++ [stmt]
+    parse_block_statement(rest, new_acc)
   end
 
   @spec parse_expression(list(Token.t()), TokenPrecedence.t()) ::
@@ -167,6 +165,10 @@ defmodule MonkeyInterpreter.Parser do
     parse_grouped_expression(tokens)
   end
 
+  defp parse_prefix([%Token{type: :if} | _rest] = tokens) do
+    parse_if_expression(tokens)
+  end
+
   defp parse_prefix_expression([token | rest]) do
     # Recurse into the right-hand expression.
     {right_expression, rest} = parse_expression(rest, :prefix)
@@ -217,5 +219,33 @@ defmodule MonkeyInterpreter.Parser do
 
     expression = {:grouped, %Ast.GroupedExpression{expression: expression}}
     {expression, rest}
+  end
+
+  defp parse_if_expression([_if_token | rest]) do
+    [%Token{type: :lparen} | rest] = rest
+
+    {condition_expression, rest} = parse_expression(rest, :lowest)
+
+    [%Token{type: :rparen} | rest] = rest
+    [%Token{type: :lbrace} | rest] = rest
+
+    {consequence, rest} = parse_block_statement(rest)
+
+    # TODO optionally, parse the alternative if the "else" exists.
+    {alternative, rest} =
+      case rest do
+        [%Token{type: :else} | rest] ->
+          [%Token{type: :lbrace} | rest] = rest
+          parse_block_statement(rest)
+
+        _ ->
+          {nil, rest}
+      end
+
+    {%Ast.IfExpression{
+       condition: condition_expression,
+       consequence: consequence,
+       alternative: alternative
+     }, rest}
   end
 end
