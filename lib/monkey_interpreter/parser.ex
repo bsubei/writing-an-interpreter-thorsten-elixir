@@ -44,7 +44,6 @@ defmodule MonkeyInterpreter.Parser do
   end
 
   @spec parse_let_statement(list(Token.t())) :: {Ast.Statement.t(), list(Token.t())}
-  # @spec parse_let_statement(list(Token.t())) :: {{:let, Ast.LetStatement.t()}, list(Token.t())}
   defp parse_let_statement(tokens) do
     # We've already seen the "let".
     # Check that there's an identifier next.
@@ -52,15 +51,22 @@ defmodule MonkeyInterpreter.Parser do
     # Then an equal sign.
     [%Token{type: :assign} | rest] = rest
     # Then an expression.
-    # TODO hack for now until we can actually parse expressions.
-    [assigned_value_token, _semicolon | rest] = rest
-    # TODO set the expression value and in the literal
+    {assigned_value_expression, rest} = parse_expression(rest, :lowest)
+
+    # Skip over the semicolon if you see it.
+    rest =
+      case rest do
+        [%Token{type: :semicolon} | rest] -> rest
+        _ -> rest
+      end
+
     {
       {:let,
        %Ast.LetStatement{
-         literal: "let #{identifier_token.literal} = #{assigned_value_token.literal}",
+         # I should probably get rid of the literal field in expressions/statements entirely
+         literal: "unused",
          identifier: %Ast.Identifier{token: identifier_token, value: identifier_token.literal},
-         assigned_value: {:integer, %Ast.IntegerLiteral{token: assigned_value_token, value: 42}}
+         assigned_value: assigned_value_expression
        }},
       rest
     }
@@ -70,32 +76,31 @@ defmodule MonkeyInterpreter.Parser do
   defp parse_return_statement(tokens) do
     # We've already seen the "return" keyword.
     # Grab the return value (an expression).
-    # TODO hack for now until we can actually parse expressions.
-    [expression | rest] = tokens
-    [_semicolon | rest] = rest
+    {return_value, rest} = parse_expression(tokens, :lowest)
 
-    # TODO actual return value
-    {{:return,
-      %Ast.ReturnStatement{
-        literal: "return #{expression.literal}",
-        return_value: {:integer, %Ast.IntegerLiteral{token: expression, value: 42}}
-      }}, rest}
-  end
-
-  @spec parse_expression_statement(list(Token.t())) :: {Ast.Statement.t(), list(Token.t())}
-  defp parse_expression_statement(tokens) do
-    # TODO pass in precedence
-    # An expression statement is just an expression and then an optional semicolon.
-    {expression, rest} = parse_expression(tokens, :lowest)
-
-    # TODO wait I'm skipping semicolon twice, once here and once in parse_expression
+    # Skip over the semicolon if you see it.
     rest =
       case rest do
         [%Token{type: :semicolon} | rest] -> rest
         _ -> rest
       end
 
-    {{:expression_statement, %Ast.ExpressionStatement{literal: "TODO", expression: expression}},
+    {{:return, %Ast.ReturnStatement{literal: "unused", return_value: return_value}}, rest}
+  end
+
+  @spec parse_expression_statement(list(Token.t())) :: {Ast.Statement.t(), list(Token.t())}
+  defp parse_expression_statement(tokens) do
+    # An expression statement is just an expression and then an optional semicolon.
+    {expression, rest} = parse_expression(tokens, :lowest)
+
+    # Skip over the semicolon if you see it.
+    rest =
+      case rest do
+        [%Token{type: :semicolon} | rest] -> rest
+        _ -> rest
+      end
+
+    {{:expression_statement, %Ast.ExpressionStatement{literal: "unused", expression: expression}},
      rest}
   end
 
@@ -132,12 +137,23 @@ defmodule MonkeyInterpreter.Parser do
   end
 
   @spec parse_prefix(list(Token.t())) :: {Ast.Expression.t(), list(Token.t())}
-  defp parse_prefix([%Token{type: :ident} | _rest] = tokens) do
-    parse_identifier(tokens)
+  defp parse_prefix([%Token{type: :ident} = token | rest]) do
+    expression = {:identifier, %Ast.Identifier{token: token, value: token.literal}}
+    {expression, rest}
   end
 
-  defp parse_prefix([%Token{type: :int} | _rest] = tokens) do
-    parse_int(tokens)
+  defp parse_prefix([%Token{type: :int} = token | rest]) do
+    {integer, ""} = Integer.parse(token.literal)
+    expression = {:integer, %Ast.IntegerLiteral{token: token, value: integer}}
+    {expression, rest}
+  end
+
+  defp parse_prefix([%Token{type: true} = token | rest]) do
+    {{:boolean, %Ast.Boolean{token: token, value: true}}, rest}
+  end
+
+  defp parse_prefix([%Token{type: false} = token | rest]) do
+    {{:boolean, %Ast.Boolean{token: token, value: false}}, rest}
   end
 
   defp parse_prefix([%Token{type: :minus} | _rest] = tokens) do
@@ -146,60 +162,6 @@ defmodule MonkeyInterpreter.Parser do
 
   defp parse_prefix([%Token{type: :bang} | _rest] = tokens) do
     parse_prefix_expression(tokens)
-  end
-
-  # @spec parse_infix(Ast.Expression.t(), list(Token.t()), TokenPrecedence.t()) ::
-  #         {Ast.Expression.t() | nil, list(Token.t())}
-  # defp parse_infix(left_expression, [%Token{type: :semicolon} | rest], _precedence) do
-  #   {left_expression, rest}
-  # end
-
-  # defp parse_infix(left_expression, [%Token{type: :plus} | _rest] = tokens, precedence) do
-  #   parse_infix_expression(left_expression, tokens, precedence)
-  # end
-
-  # defp parse_infix(left_expression, [%Token{type: :minus} | _rest] = tokens, precedence) do
-  #   parse_infix_expression(left_expression, tokens, precedence)
-  # end
-
-  # defp parse_infix(left_expression, [%Token{type: :asterisk} | _rest] = tokens, precedence) do
-  #   parse_infix_expression(left_expression, tokens, precedence)
-  # end
-
-  # defp parse_infix(left_expression, [%Token{type: :slash} | _rest] = tokens, precedence) do
-  #   parse_infix_expression(left_expression, tokens, precedence)
-  # end
-
-  # defp parse_infix(left_expression, [%Token{type: :gt} | _rest] = tokens, precedence) do
-  #   parse_infix_expression(left_expression, tokens, precedence)
-  # end
-
-  # defp parse_infix(left_expression, [%Token{type: :lt} | _rest] = tokens, precedence) do
-  #   parse_infix_expression(left_expression, tokens, precedence)
-  # end
-
-  # defp parse_infix(left_expression, [%Token{type: :eq} | _rest] = tokens, precedence) do
-  #   parse_infix_expression(left_expression, tokens, precedence)
-  # end
-
-  # defp parse_infix(left_expression, [%Token{type: :not_eq} | _rest] = tokens, precedence) do
-  #   parse_infix_expression(left_expression, tokens, precedence)
-  # end
-
-  # # If the current token does not define an infix fn, return nil and don't consume any of the tokens.
-  # defp parse_infix(_left_expression, tokens, _precedence) do
-  #   {nil, tokens}
-  # end
-
-  defp parse_identifier([token | rest]) do
-    expression = {:identifier, %Ast.Identifier{token: token, value: token.literal}}
-    {expression, rest}
-  end
-
-  defp parse_int([token | rest]) do
-    {integer, ""} = Integer.parse(token.literal)
-    expression = {:integer, %Ast.IntegerLiteral{token: token, value: integer}}
-    {expression, rest}
   end
 
   defp parse_prefix_expression([token | rest]) do
