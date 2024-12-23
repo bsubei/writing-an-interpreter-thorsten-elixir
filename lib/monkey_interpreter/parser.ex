@@ -131,7 +131,6 @@ defmodule MonkeyInterpreter.Parser do
       # Stop recursing and return the expression we were given. This doesn't consume any tokens.
       nil -> {expression, rest}
       # Keep recursing because there's more infix operations.
-      # TODO I think this precedence is wrong. We probably have to get the new precedence from the returned expression
       _ -> parse_infix_recurse(new_expr, rest, precedence)
     end
   end
@@ -162,6 +161,10 @@ defmodule MonkeyInterpreter.Parser do
 
   defp parse_prefix([%Token{type: :bang} | _rest] = tokens) do
     parse_prefix_expression(tokens)
+  end
+
+  defp parse_prefix([%Token{type: :lparen} | _rest] = tokens) do
+    parse_grouped_expression(tokens)
   end
 
   defp parse_prefix_expression([token | rest]) do
@@ -204,5 +207,15 @@ defmodule MonkeyInterpreter.Parser do
       # This token either doesn't satisfy the precedence condition OR is not actually an infix operator. Return nil and don't consume any tokens.
       {nil, tokens}
     end
+  end
+
+  defp parse_grouped_expression([_lparen_token | rest]) do
+    # Parse an entire expression here.
+    {expression, rest} = parse_expression(rest, :lowest)
+    # Expect an rparen afterwards.
+    [%Token{type: :rparen} | rest] = rest
+
+    expression = {:grouped, %Ast.GroupedExpression{expression: expression}}
+    {expression, rest}
   end
 end

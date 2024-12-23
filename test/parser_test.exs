@@ -175,8 +175,8 @@ defmodule ParserTest do
       "!-a",
       "a + b + c",
       "a * b + c",
-      "a - b * c"
-      # TODO add a tricky one that would reveal incorrect precedence
+      "a - b * c",
+      "(a + b) * (c - 42)"
     ]
 
     outputs = [
@@ -252,6 +252,38 @@ defmodule ParserTest do
                 {:identifier, %Ast.Identifier{token: Token.init(:ident, "b"), value: "b"}},
               right_expression:
                 {:identifier, %Ast.Identifier{token: Token.init(:ident, "c"), value: "c"}}
+            }}
+       }},
+
+      # "(a + b) * (c - 42)" should be parsed as... well you get the point, but this one has grouped expressions to specify the precedence.
+      {:infix,
+       %Ast.Infix{
+         operator_token: Token.init(:asterisk, "*"),
+         left_expression:
+           {:grouped,
+            %Ast.GroupedExpression{
+              expression:
+                {:infix,
+                 %Ast.Infix{
+                   operator_token: Token.init(:plus, "+"),
+                   left_expression:
+                     {:identifier, %Ast.Identifier{token: Token.init(:ident, "a"), value: "a"}},
+                   right_expression:
+                     {:identifier, %Ast.Identifier{token: Token.init(:ident, "b"), value: "b"}}
+                 }}
+            }},
+         right_expression:
+           {:grouped,
+            %Ast.GroupedExpression{
+              expression:
+                {:infix,
+                 %Ast.Infix{
+                   operator_token: Token.init(:minus, "-"),
+                   left_expression:
+                     {:identifier, %Ast.Identifier{token: Token.init(:ident, "c"), value: "c"}},
+                   right_expression:
+                     {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "42"), value: 42}}
+                 }}
             }}
        }}
     ]
