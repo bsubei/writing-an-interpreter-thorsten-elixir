@@ -474,6 +474,44 @@ defmodule ParserTest do
           arguments: [
             {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "25"), value: 25}}
           ]
+        }}},
+      {"my_func(x, fn(a, b){return a - b;})",
+       {:call_expression,
+        %Ast.CallExpression{
+          function:
+            {:identifier, %Ast.Identifier{token: Token.init(:ident, "my_func"), value: "my_func"}},
+          arguments: [
+            {:identifier, %Ast.Identifier{token: Token.init(:ident, "x"), value: "x"}},
+            {:function_literal,
+             %Ast.FunctionLiteral{
+               parameters: [
+                 %Ast.Identifier{token: Token.init(:ident, "a"), value: "a"},
+                 %Ast.Identifier{token: Token.init(:ident, "b"), value: "b"}
+               ],
+               body:
+                 {:block_statement,
+                  %Ast.BlockStatement{
+                    literal: "unused",
+                    statements: [
+                      {:return_statement,
+                       %Ast.ReturnStatement{
+                         literal: "unused",
+                         return_value:
+                           {:infix,
+                            %Ast.Infix{
+                              operator_token: Token.init(:minus, "-"),
+                              left_expression:
+                                {:identifier,
+                                 %Ast.Identifier{token: Token.init(:ident, "a"), value: "a"}},
+                              right_expression:
+                                {:identifier,
+                                 %Ast.Identifier{token: Token.init(:ident, "b"), value: "b"}}
+                            }}
+                       }}
+                    ]
+                  }}
+             }}
+          ]
         }}}
     ]
 
