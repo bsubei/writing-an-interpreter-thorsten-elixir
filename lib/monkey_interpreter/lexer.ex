@@ -9,7 +9,7 @@ defmodule MonkeyInterpreter.Lexer do
   alias MonkeyInterpreter.Token
 
   # NOTE: here, "ch" must be an integer representing the utf8 codepoint for the character. "ch" is not a string.
-  defguard is_letter?(ch) when ch in ?a..?z or ch in ?A..?Z
+  defguard is_letter?(ch) when ch in ?a..?z or ch in ?A..?Z or ch == ?_
   defguard is_whitespace?(ch) when ch in [?\s, ?\t, ?\n, ?\r]
   defguard is_digit?(ch) when ch in ?0..?9
 
