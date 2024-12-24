@@ -58,6 +58,7 @@ defmodule MonkeyInterpreter.Ast do
             | {:grouped, Ast.GroupedExpression.t()}
             | {:if, Ast.IfExpression.t()}
             | {:function_literal, Ast.FunctionLiteral.t()}
+            | {:call_expression, Ast.CallExpression.t()}
             | {:prefix, Ast.Prefix.t()}
             | {:infix, Ast.Infix.t()}
   end
@@ -99,12 +100,25 @@ defmodule MonkeyInterpreter.Ast do
     defstruct @enforce_keys
   end
 
+  # e.g. fn (x, y) { return x + y; }
   defmodule FunctionLiteral do
     @type t :: %__MODULE__{
             parameters: list(Ast.Identifier.t()),
             body: Ast.BlockStatement.t()
           }
     @enforce_keys [:parameters, :body]
+    defstruct @enforce_keys
+  end
+
+  # e.g. my_func(42, i), or even fn (x) { return x + 1; }(25)
+  defmodule CallExpression do
+    @type t :: %__MODULE__{
+            # This could be either an identifier (like a function name) or even a FunctionLiteral so we can directly invoke anonymous functions.
+            function: Ast.Expression.t(),
+            # Note the difference between parameters (in the definition of a function) and arguments (in the invocation of a function).
+            arguments: list(Ast.Expression.t())
+          }
+    @enforce_keys [:function, :arguments]
     defstruct @enforce_keys
   end
 

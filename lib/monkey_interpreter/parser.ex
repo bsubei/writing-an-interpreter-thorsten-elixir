@@ -194,24 +194,35 @@ defmodule MonkeyInterpreter.Parser do
     operator_is_infix =
       operator_token.type in [:plus, :minus, :asterisk, :slash, :gt, :lt, :eq, :not_eq]
 
-    if is_precedence_satisfied and operator_is_infix do
-      precedence = TokenPrecedence.from_token_type(operator_token.type)
+    cond do
+      # Regular infix expression
+      is_precedence_satisfied and operator_is_infix ->
+        # Recurse into the right-hand expression using the precedence of the infix operator token.
+        {right_expression, rest} = parse_expression(rest, operator_precedence)
 
-      # Recurse into the right-hand expression using the precedence of the infix operator token.
-      {right_expression, rest} = parse_expression(rest, precedence)
+        expression =
+          {:infix,
+           %Ast.Infix{
+             operator_token: operator_token,
+             left_expression: left_expression,
+             right_expression: right_expression
+           }}
 
-      expression =
-        {:infix,
-         %Ast.Infix{
-           operator_token: operator_token,
-           left_expression: left_expression,
-           right_expression: right_expression
-         }}
+        {expression, rest}
 
-      {expression, rest}
-    else
-      # This token either doesn't satisfy the precedence condition OR is not actually an infix operator. Return nil and don't consume any tokens.
-      {nil, tokens}
+      # Special infix expression case: a call expression.
+      # TODO should this be an {:infix, expression} ?
+      is_precedence_satisfied and operator_token.type == :lparen ->
+        {arguments, rest} = parse_call_arguments(rest)
+
+        expression =
+          {:call_expression, %Ast.CallExpression{function: left_expression, arguments: arguments}}
+
+        {expression, rest}
+
+      true ->
+        # This token either doesn't satisfy the precedence condition OR is not actually an infix operator. Return nil and don't consume any tokens.
+        {nil, tokens}
     end
   end
 
@@ -279,5 +290,23 @@ defmodule MonkeyInterpreter.Parser do
 
     new_acc = acc ++ [param]
     parse_function_parameters(rest, new_acc)
+  end
+
+  # Pretty much the same as parse_function_parameters, except here the arguments can be arbitrary expressions, not just identifiers.
+  defp parse_call_arguments(tokens, acc \\ [])
+  defp parse_call_arguments([%Token{type: :rparen} | rest], acc), do: {acc, rest}
+
+  defp parse_call_arguments(tokens, acc) do
+    # Parse an argument (an expression).
+    {argument, rest} = parse_expression(tokens, :lowest)
+    # Get rid of the subsequent comma if it exists (it doesn't exist for the last argument).
+    rest =
+      case rest do
+        [%Token{type: :comma} | rest] -> rest
+        _ -> rest
+      end
+
+    new_acc = acc ++ [argument]
+    parse_call_arguments(rest, new_acc)
   end
 end

@@ -449,4 +449,44 @@ defmodule ParserTest do
       end
     end)
   end
+
+  test "parser can parse function call expressions, including of function literals" do
+    inputs_and_outputs = [
+      {"add(1, x)",
+       {:call_expression,
+        %Ast.CallExpression{
+          function:
+            {:identifier, %Ast.Identifier{token: Token.init(:ident, "add"), value: "add"}},
+          arguments: [
+            {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "1"), value: 1}},
+            {:identifier, %Ast.Identifier{token: Token.init(:ident, "x"), value: "x"}}
+          ]
+        }}},
+      {"fn (x) { } (25)",
+       {:call_expression,
+        %Ast.CallExpression{
+          function:
+            {:function_literal,
+             %Ast.FunctionLiteral{
+               parameters: [%Ast.Identifier{token: Token.init(:ident, "x"), value: "x"}],
+               body: {:block_statement, %Ast.BlockStatement{literal: "unused", statements: []}}
+             }},
+          arguments: [
+            {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "25"), value: 25}}
+          ]
+        }}}
+    ]
+
+    inputs_and_outputs
+    |> Enum.each(fn {input, expected_output} ->
+      program = input |> Lexer.init() |> Parser.init() |> Parser.parse_program()
+
+      assert length(program.statements) == 1
+
+      case program.statements |> List.first() do
+        {:expression_statement, stmt} ->
+          assert stmt.expression == expected_output
+      end
+    end)
+  end
 end
