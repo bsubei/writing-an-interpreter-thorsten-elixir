@@ -1,5 +1,5 @@
 defmodule MonkeyInterpreter.Repl do
-  alias MonkeyInterpreter.Lexer
+  alias MonkeyInterpreter.{Lexer, Parser}
 
   @spec start() :: no_return()
   def start do
@@ -25,11 +25,11 @@ defmodule MonkeyInterpreter.Repl do
       {:error, reason} ->
         IO.puts("Error: #{reason}")
 
-      # Display the lexed input, then recurse infinitely.
+      # Display the parsed AST, then recurse infinitely.
       input ->
-        lexer = Lexer.init(input)
+        program = input |> Lexer.init() |> Parser.init() |> Parser.parse_program()
 
-        Lexer.all_tokens(lexer) |> Enum.map(fn token -> IO.puts(inspect(token)) end)
+        program.statements |> Enum.each(&IO.inspect(&1))
 
         read_loop()
     end
