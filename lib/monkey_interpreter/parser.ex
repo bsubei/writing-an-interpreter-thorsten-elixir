@@ -43,7 +43,7 @@ defmodule MonkeyInterpreter.Parser do
       end
 
     {
-      {:let,
+      {:let_statement,
        %Ast.LetStatement{
          # I should probably get rid of the literal field in expressions/statements entirely
          literal: "unused",
@@ -65,7 +65,8 @@ defmodule MonkeyInterpreter.Parser do
         _ -> rest
       end
 
-    {{:return, %Ast.ReturnStatement{literal: "unused", return_value: return_value}}, rest}
+    {{:return_statement, %Ast.ReturnStatement{literal: "unused", return_value: return_value}},
+     rest}
   end
 
   # The general case, where we assume it's an expression statement

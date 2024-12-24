@@ -12,8 +12,8 @@ defmodule MonkeyInterpreter.Ast do
   # We're using tagged tuples instead of interfaces/protocols. A Statement could be any of these kinds of statements.
   defmodule Statement do
     @type t ::
-            {:let, Ast.LetStatement.t()}
-            | {:return, Ast.ReturnStatement.t()}
+            {:let_statement, Ast.LetStatement.t()}
+            | {:return_statement, Ast.ReturnStatement.t()}
             | {:expression_statement, Ast.ExpressionStatement.t()}
             | {:block_statement, Ast.BlockStatement.t()}
   end

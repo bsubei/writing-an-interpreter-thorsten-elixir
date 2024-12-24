@@ -22,7 +22,7 @@ defmodule ParserTest do
       assert length(program.statements) == 1
 
       case program.statements |> List.first() do
-        {:let, let_stmt} ->
+        {:let_statement, let_stmt} ->
           assert let_stmt.identifier == expected_identifier
           assert let_stmt.assigned_value == expected_assigned_value
       end
@@ -49,7 +49,7 @@ defmodule ParserTest do
       assert length(program.statements) == 1
 
       case program.statements |> List.first() do
-        {:return, stmt} -> assert stmt.return_value == expected_output
+        {:return_statement, stmt} -> assert stmt.return_value == expected_output
       end
     end)
   end
@@ -405,7 +405,7 @@ defmodule ParserTest do
 
   test "parser can parse function literal expressions" do
     inputs_and_outputs = [
-      {"fn (x, y) { x + y }",
+      {"fn (x, y) { return x + y; }",
        {:function_literal,
         %Ast.FunctionLiteral{
           parameters: [
@@ -417,10 +417,10 @@ defmodule ParserTest do
              %Ast.BlockStatement{
                literal: "unused",
                statements: [
-                 {:expression_statement,
-                  %Ast.ExpressionStatement{
+                 {:return_statement,
+                  %Ast.ReturnStatement{
                     literal: "unused",
-                    expression:
+                    return_value:
                       {:infix,
                        %Ast.Infix{
                          operator_token: Token.init(:plus, "+"),
