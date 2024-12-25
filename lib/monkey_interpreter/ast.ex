@@ -2,6 +2,8 @@ defmodule MonkeyInterpreter.Ast do
   alias MonkeyInterpreter.Ast
   alias MonkeyInterpreter.Token
 
+  @type node_t :: Ast.Program.t() | Ast.Statement.t() | Ast.Expression.t()
+
   # A program consists of a series of statements.
   defmodule Program do
     @type t :: %__MODULE__{statements: list(Ast.Statement.t())}
