@@ -25,14 +25,11 @@ defmodule MonkeyInterpreter.Evaluator do
 
   def eval({:expression_statement, %Ast.ExpressionStatement{} = stmt}) do
     eval(stmt.expression)
-    # TODO The statement itself doesn't return anything. Or does it?
   end
 
   def eval({:block_statement, %Ast.BlockStatement{} = stmt}) do
-    # Evaluate each statement in series.
-    stmt.statements |> Enum.each(fn stmt -> eval(stmt) end)
-    # The statement itself doesn't return anything.
-    nil
+    # Evaluate each statement in series, and return the value of the last statement.
+    stmt.statements |> Enum.map(fn stmt -> eval(stmt) end) |> List.last()
   end
 
   def eval({:identifier, %Ast.Identifier{token: _token, value: value}}) do
@@ -52,10 +49,11 @@ defmodule MonkeyInterpreter.Evaluator do
     eval(expression)
   end
 
-  def eval({:if, %Ast.IfExpression{} = expr}) do
+  def eval({:if_expression, %Ast.IfExpression{} = expr}) do
     # Evaluate the condition, and if found truthy, evaluate and return the consequence. Otherwise, use the alternative.
     clause = if is_truthy(eval(expr.condition)), do: expr.consequence, else: expr.alternative
-    eval(clause)
+    # If the alternative is chosen but it doesn't exist, return nil.
+    if clause != nil, do: eval(clause), else: nil
   end
 
   def eval({:function_literal, %Ast.FunctionLiteral{} = _expr}) do
@@ -69,9 +67,9 @@ defmodule MonkeyInterpreter.Evaluator do
   end
 
   def eval({:prefix, %Ast.Prefix{operator_token: token} = expr}) do
-    # There are only two prefix operators: "!" and "-"
     if TokenType.is_prefix(token.type) do
       value = eval(expr.right_expression)
+      # TODO add type validation (e.g. can't use "-" on a bool)
       operator = TokenType.to_prefix_operator(token.type)
       operator.(value)
     else
@@ -83,6 +81,7 @@ defmodule MonkeyInterpreter.Evaluator do
     if TokenType.is_infix(expr.operator_token.type) do
       left = eval(expr.left_expression)
       right = eval(expr.right_expression)
+      # TODO add type validation (e.g. can't use "-" on bools)
       operator = TokenType.to_infix_operator(expr.operator_token.type)
       operator.(left, right)
     else
@@ -94,7 +93,7 @@ defmodule MonkeyInterpreter.Evaluator do
     raise("Unimplemented eval: #{inspect(x)}")
   end
 
-  # The definition of truthy/falsey in the Monkey language differs from Elixir (the host language).
+  # TODO double check whether the definition of truthy/falsey in the Monkey language differs from Elixir (the host language).
   defp is_truthy(value) do
     # TODO actually implement
     if value do

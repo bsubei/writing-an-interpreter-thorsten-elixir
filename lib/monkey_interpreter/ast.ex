@@ -58,7 +58,7 @@ defmodule MonkeyInterpreter.Ast do
             | {:boolean, Ast.Boolean.t()}
             | {:integer, Ast.IntegerLiteral.t()}
             | {:grouped, Ast.GroupedExpression.t()}
-            | {:if, Ast.IfExpression.t()}
+            | {:if_expression, Ast.IfExpression.t()}
             | {:function_literal, Ast.FunctionLiteral.t()}
             | {:call_expression, Ast.CallExpression.t()}
             | {:prefix, Ast.Prefix.t()}

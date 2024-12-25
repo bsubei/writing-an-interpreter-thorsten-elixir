@@ -257,11 +257,15 @@ defmodule MonkeyInterpreter.Parser do
           {nil, rest}
       end
 
-    {%Ast.IfExpression{
-       condition: condition_expression,
-       consequence: consequence,
-       alternative: alternative
-     }, rest}
+    expr =
+      {:if_expression,
+       %Ast.IfExpression{
+         condition: condition_expression,
+         consequence: consequence,
+         alternative: alternative
+       }}
+
+    {expr, rest}
   end
 
   defp parse_function_literal_expression([_fn_token | rest]) do
