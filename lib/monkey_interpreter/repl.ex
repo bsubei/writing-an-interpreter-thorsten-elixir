@@ -1,5 +1,5 @@
 defmodule MonkeyInterpreter.Repl do
-  alias MonkeyInterpreter.{Lexer, Parser}
+  alias MonkeyInterpreter.{Lexer, Parser, Evaluator}
 
   @spec start() :: no_return()
   def start do
@@ -27,15 +27,20 @@ defmodule MonkeyInterpreter.Repl do
 
       # Display the parsed AST, then recurse infinitely.
       input ->
-        program = input |> Lexer.init() |> Parser.init() |> Parser.parse_program()
+        value =
+          input |> Lexer.init() |> Parser.init() |> Parser.parse_program() |> Evaluator.eval()
 
-        program.statements |> Enum.each(&IO.inspect(&1))
+        IO.puts(value)
 
         read_loop()
     end
   end
 
   defp get_username do
-    System.get_env("USER") || System.get_env("USERNAME")
+    # I couldn't find a better way to get the username after a quick search.
+    :init.get_argument(:home)
+    |> elem(1)
+    |> List.first()
+    |> Path.basename()
   end
 end
