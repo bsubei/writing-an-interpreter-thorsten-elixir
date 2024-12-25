@@ -27,6 +27,35 @@ defmodule MonkeyInterpreter.TokenType do
           | :if
           | :else
           | :return
+
+  @spec is_infix(t()) :: boolean()
+  def is_infix(token_type),
+    do: token_type in [:plus, :minus, :asterisk, :slash, :gt, :lt, :eq, :not_eq]
+
+  @spec to_infix_operator(t()) :: fun()
+  def to_infix_operator(token_type) do
+    case token_type do
+      :plus -> &Kernel.+/2
+      :minus -> &Kernel.-/2
+      :asterisk -> &Kernel.*/2
+      :slash -> &Kernel.//2
+      :gt -> &Kernel.>/2
+      :lt -> &Kernel.</2
+      :eq -> &Kernel.==/2
+      :not_eq -> &Kernel.!=/2
+    end
+  end
+
+  @spec is_prefix(t()) :: boolean()
+  def is_prefix(token_type), do: token_type in [:bang, :minus]
+
+  @spec to_prefix_operator(t()) :: fun()
+  def to_prefix_operator(token_type) do
+    case token_type do
+      :bang -> &Kernel.!/1
+      :minus -> &Kernel.-/1
+    end
+  end
 end
 
 defmodule MonkeyInterpreter.TokenPrecedence do

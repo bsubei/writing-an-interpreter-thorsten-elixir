@@ -9,7 +9,13 @@ defmodule EvaluatorTest do
       {"!!true", true},
       {"42", 42},
       {"-42", -42},
-      {"--42", 42}
+      {"--42", 42},
+      # Test truthy/falsey conversions.
+      {"!5", false},
+      {"!!5", true},
+      {"1+1", 1 + 1},
+      {"2*4", 2 * 4},
+      {"(1 + 1) / 2", (1 + 1) / 2}
     ]
 
     inputs_and_outputs

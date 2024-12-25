@@ -1,5 +1,5 @@
 defmodule MonkeyInterpreter.Evaluator do
-  alias MonkeyInterpreter.{Ast}
+  alias MonkeyInterpreter.{Ast, TokenType}
 
   @spec eval(Ast.node_t()) :: any()
 
@@ -68,23 +68,26 @@ defmodule MonkeyInterpreter.Evaluator do
     raise("Call expression unimplemented")
   end
 
-  def eval({:prefix, %Ast.Prefix{} = expr}) do
-    value = eval(expr.right_expression)
-
+  def eval({:prefix, %Ast.Prefix{operator_token: token} = expr}) do
     # There are only two prefix operators: "!" and "-"
-    case expr.operator_token.type do
-      :bang ->
-        not is_truthy(value)
-
-      :minus ->
-        if is_integer(value),
-          do: -value,
-          else: raise("Value #{inspect(value)} is not an integer!")
+    if TokenType.is_prefix(token.type) do
+      value = eval(expr.right_expression)
+      operator = TokenType.to_prefix_operator(token.type)
+      operator.(value)
+    else
+      raise("Invalid prefix operator: #{inspect(token)}")
     end
   end
 
   def eval({:infix, %Ast.Infix{} = expr}) do
-    raise("Unimplemented infix: #{inspect(expr)}")
+    if TokenType.is_infix(expr.operator_token.type) do
+      left = eval(expr.left_expression)
+      right = eval(expr.right_expression)
+      operator = TokenType.to_infix_operator(expr.operator_token.type)
+      operator.(left, right)
+    else
+      raise("Invalid infix operator: #{inspect(expr.operator_token)}")
+    end
   end
 
   def eval(x) do
