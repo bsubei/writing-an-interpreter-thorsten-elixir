@@ -22,7 +22,7 @@ defmodule EvaluatorTest do
     inputs_and_outputs
     |> Enum.each(fn {input, expected_output} ->
       result =
-        input |> Lexer.init() |> Parser.init() |> Parser.parse_program() |> Evaluator.eval()
+        input |> Lexer.init() |> Parser.init() |> Parser.parse_program() |> Evaluator.evaluate()
 
       assert result == expected_output
     end)
@@ -35,13 +35,15 @@ defmodule EvaluatorTest do
       {"if (1) { 10 }", 10},
       {"if (1 < 2) { 5 }", 5},
       {"if (1 < 2) { 5 } else { 66 }", 5},
-      {"if (1 > 2) { 5 } else { 66 }", 66}
+      {"if (1 > 2) { 5 } else { 66 }", 66},
+      # Test that the first-encountered return will return "early".
+      {"if (true) { if (true) {return 10;}; return 0;}", 10}
     ]
 
     inputs_and_outputs
     |> Enum.each(fn {input, expected_output} ->
       result =
-        input |> Lexer.init() |> Parser.init() |> Parser.parse_program() |> Evaluator.eval()
+        input |> Lexer.init() |> Parser.init() |> Parser.parse_program() |> Evaluator.evaluate()
 
       assert result == expected_output
     end)

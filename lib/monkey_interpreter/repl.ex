@@ -28,7 +28,7 @@ defmodule MonkeyInterpreter.Repl do
       # Display the parsed AST, then recurse infinitely.
       input ->
         value =
-          input |> Lexer.init() |> Parser.init() |> Parser.parse_program() |> Evaluator.eval()
+          input |> Lexer.init() |> Parser.init() |> Parser.parse_program() |> Evaluator.evaluate()
 
         IO.puts(value)
 

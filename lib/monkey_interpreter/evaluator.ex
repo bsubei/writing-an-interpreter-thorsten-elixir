@@ -1,95 +1,110 @@
 defmodule MonkeyInterpreter.Evaluator do
   alias MonkeyInterpreter.{Ast, TokenType}
 
-  @spec eval(Ast.node_t()) :: any()
-
-  def eval(%Ast.Program{} = program) do
-    # Loop over each statement and eval it, and return the value of the last one.
-    program.statements |> Enum.map(fn stmt -> eval(stmt) end) |> List.last()
+  @spec evaluate(Ast.Program.t()) :: any()
+  def evaluate(%Ast.Program{} = program) do
+    # Eval all the statements (stop early after you encounter a :return_statement) and return the value of the last one.
+    program.statements
+    |> Enum.reduce_while(nil, fn
+      stmt, _acc ->
+        case eval(stmt) do
+          {:ok, value} -> {:cont, value}
+          {:returned, value} -> {:halt, value}
+        end
+    end)
   end
 
-  def eval({:let_statement, %Ast.LetStatement{} = stmt}) do
+  # The :returned atom indicates this value was returned as part of a return statement, so subsequent statements should not be evaluated and we should return "early".
+  @spec eval(Ast.Node.t()) :: {:ok | :returned, any()}
+
+  defp eval({:let_statement, %Ast.LetStatement{} = stmt}) do
     # Evaluate the right-hand side.
-    eval(stmt.assigned_value)
+    {:ok, _value} = eval(stmt.assigned_value)
     # TODO do the assignment and stuff
-    # The statement itself returns nothing.
-    nil
+    # TODO The statement itself returns nothing, I think.
+    {:ok, nil}
   end
 
-  def eval({:return_statement, %Ast.ReturnStatement{} = stmt}) do
-    # TODO do something with the value to return (actually "return" it)
-    eval(stmt.return_value)
-    # The statement itself doesn't return anything (?).
-    nil
+  defp eval({:return_statement, %Ast.ReturnStatement{} = stmt}) do
+    {_atom, value} = eval(stmt.return_value)
+    {:returned, value}
   end
 
-  def eval({:expression_statement, %Ast.ExpressionStatement{} = stmt}) do
+  defp eval({:expression_statement, %Ast.ExpressionStatement{} = stmt}) do
     eval(stmt.expression)
   end
 
-  def eval({:block_statement, %Ast.BlockStatement{} = stmt}) do
-    # Evaluate each statement in series, and return the value of the last statement.
-    stmt.statements |> Enum.map(fn stmt -> eval(stmt) end) |> List.last()
+  defp eval({:block_statement, %Ast.BlockStatement{} = stmt}) do
+    # Eval all the statements (stop early after you encounter a :return_statement) and return the value of the last one.
+    stmt.statements
+    |> Enum.reduce_while(nil, fn
+      stmt, _acc ->
+        case eval(stmt) do
+          {:ok, _} = result -> {:cont, result}
+          {:returned, _} = result -> {:halt, result}
+        end
+    end)
   end
 
-  def eval({:identifier, %Ast.Identifier{token: _token, value: value}}) do
+  defp eval({:identifier, %Ast.Identifier{token: _token, value: value}}) do
     # TODO return the actual value stored in the identifier
-    value
+    {:ok, value}
   end
 
-  def eval({:boolean, %Ast.Boolean{value: value}}) do
-    value
+  defp eval({:boolean, %Ast.Boolean{value: value}}) do
+    {:ok, value}
   end
 
-  def eval({:integer, %Ast.IntegerLiteral{value: value}}) do
-    value
+  defp eval({:integer, %Ast.IntegerLiteral{value: value}}) do
+    {:ok, value}
   end
 
-  def eval({:grouped, %Ast.GroupedExpression{expression: expression}}) do
+  defp eval({:grouped, %Ast.GroupedExpression{expression: expression}}) do
     eval(expression)
   end
 
-  def eval({:if_expression, %Ast.IfExpression{} = expr}) do
+  defp eval({:if_expression, %Ast.IfExpression{} = expr}) do
     # Evaluate the condition, and if found truthy, evaluate and return the consequence. Otherwise, use the alternative.
-    clause = if is_truthy(eval(expr.condition)), do: expr.consequence, else: expr.alternative
+    {:ok, condition_result} = eval(expr.condition)
+    clause = if is_truthy(condition_result), do: expr.consequence, else: expr.alternative
     # If the alternative is chosen but it doesn't exist, return nil.
-    if clause != nil, do: eval(clause), else: nil
+    if clause != nil, do: eval(clause), else: {:ok, nil}
   end
 
-  def eval({:function_literal, %Ast.FunctionLiteral{} = _expr}) do
+  defp eval({:function_literal, %Ast.FunctionLiteral{} = _expr}) do
     # TODO this is just an anonymous function, there's nothing to "eval"...
     raise("Function literal unimplemented")
   end
 
-  def eval({:call_expression, %Ast.CallExpression{} = _expr}) do
+  defp eval({:call_expression, %Ast.CallExpression{} = _expr}) do
     # TODO if function refers to a callable, then make the call. Otherwise, throw an error.
     raise("Call expression unimplemented")
   end
 
-  def eval({:prefix, %Ast.Prefix{operator_token: token} = expr}) do
+  defp eval({:prefix, %Ast.Prefix{operator_token: token} = expr}) do
     if TokenType.is_prefix(token.type) do
-      value = eval(expr.right_expression)
+      {:ok, value} = eval(expr.right_expression)
       # TODO add type validation (e.g. can't use "-" on a bool)
       operator = TokenType.to_prefix_operator(token.type)
-      operator.(value)
+      {:ok, operator.(value)}
     else
       raise("Invalid prefix operator: #{inspect(token)}")
     end
   end
 
-  def eval({:infix, %Ast.Infix{} = expr}) do
+  defp eval({:infix, %Ast.Infix{} = expr}) do
     if TokenType.is_infix(expr.operator_token.type) do
-      left = eval(expr.left_expression)
-      right = eval(expr.right_expression)
+      {:ok, left} = eval(expr.left_expression)
+      {:ok, right} = eval(expr.right_expression)
       # TODO add type validation (e.g. can't use "-" on bools)
       operator = TokenType.to_infix_operator(expr.operator_token.type)
-      operator.(left, right)
+      {:ok, operator.(left, right)}
     else
       raise("Invalid infix operator: #{inspect(expr.operator_token)}")
     end
   end
 
-  def eval(x) do
+  defp eval(x) do
     raise("Unimplemented eval: #{inspect(x)}")
   end
 
