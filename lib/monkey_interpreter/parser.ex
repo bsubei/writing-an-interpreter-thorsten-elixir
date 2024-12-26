@@ -1,5 +1,5 @@
 defmodule MonkeyInterpreter.Parser do
-  alias MonkeyInterpreter.{Ast, Lexer, Token, TokenType, TokenPrecedence}
+  alias MonkeyInterpreter.{Ast, Lexer, Token, TokenPrecedence}
 
   @type t :: %__MODULE__{lexer: Lexer.t()}
   @enforce_keys [:lexer]
@@ -192,7 +192,7 @@ defmodule MonkeyInterpreter.Parser do
         _ -> TokenPrecedence.compare(precedence, operator_precedence) == :lt
       end
 
-    operator_is_infix = TokenType.is_infix(operator_token.type)
+    operator_is_infix = Token.is_infix(operator_token)
 
     cond do
       # Regular infix expression

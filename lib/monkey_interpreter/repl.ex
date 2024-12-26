@@ -27,10 +27,14 @@ defmodule MonkeyInterpreter.Repl do
 
       # Display the parsed AST, then recurse infinitely.
       input ->
-        value =
-          input |> Lexer.init() |> Parser.init() |> Parser.parse_program() |> Evaluator.evaluate()
-
-        IO.puts(value)
+        case input
+             |> Lexer.init()
+             |> Parser.init()
+             |> Parser.parse_program()
+             |> Evaluator.evaluate() do
+          {:error, reason} -> IO.puts(:stderr, "ERROR: #{reason}")
+          {:ok, value} -> IO.puts(value)
+        end
 
         read_loop()
     end

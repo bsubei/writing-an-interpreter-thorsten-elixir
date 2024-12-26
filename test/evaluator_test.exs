@@ -13,6 +13,7 @@ defmodule EvaluatorTest do
       # Test truthy/falsey conversions.
       {"!5", false},
       {"!!5", true},
+      {"!5 == false", true},
       # Test infix expressions, included grouped ones.
       {"1+1", 1 + 1},
       {"2*4", 2 * 4},
@@ -21,7 +22,7 @@ defmodule EvaluatorTest do
 
     inputs_and_outputs
     |> Enum.each(fn {input, expected_output} ->
-      result =
+      {:ok, result} =
         input |> Lexer.init() |> Parser.init() |> Parser.parse_program() |> Evaluator.evaluate()
 
       assert result == expected_output
@@ -42,10 +43,31 @@ defmodule EvaluatorTest do
 
     inputs_and_outputs
     |> Enum.each(fn {input, expected_output} ->
-      result =
+      {:ok, result} =
         input |> Lexer.init() |> Parser.init() |> Parser.parse_program() |> Evaluator.evaluate()
 
       assert result == expected_output
+    end)
+  end
+
+  test "evaluator correctly handles errors" do
+    inputs_and_outputs = [
+      {"5 + true;", "type mismatch: INTEGER + BOOLEAN"},
+      {"5 + true; 5;", "type mismatch: INTEGER + BOOLEAN"},
+      {"-true", "type mismatch: -BOOLEAN"},
+      {"true + false", "type mismatch: BOOLEAN + BOOLEAN"},
+      {"5; true + false; 5;", "type mismatch: BOOLEAN + BOOLEAN"},
+      {"if (10 > 1) { true + false; }", "type mismatch: BOOLEAN + BOOLEAN"},
+      {"if (true) { if (true) {return true + false;}; return 0;}",
+       "type mismatch: BOOLEAN + BOOLEAN"}
+    ]
+
+    inputs_and_outputs
+    |> Enum.each(fn {input, expected_output} ->
+      {:error, reason} =
+        input |> Lexer.init() |> Parser.init() |> Parser.parse_program() |> Evaluator.evaluate()
+
+      assert reason == expected_output
     end)
   end
 end
