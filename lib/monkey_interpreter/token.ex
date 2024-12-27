@@ -173,6 +173,7 @@ defmodule MonkeyInterpreter.Token do
   defp user_displayed_type(value) when is_nil(value), do: "NULL"
 
   # TODO double check whether the definition of truthy/falsey in the Monkey language differs from Elixir (the host language).
+  @spec is_truthy(any()) :: boolean()
   def is_truthy(value) do
     # TODO actually implement
     if value do

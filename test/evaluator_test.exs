@@ -1,6 +1,6 @@
 defmodule EvaluatorTest do
   use ExUnit.Case
-  alias MonkeyInterpreter.{Lexer, Parser, Evaluator}
+  alias MonkeyInterpreter.{Lexer, Parser, Evaluator, Ast}
   doctest Evaluator
 
   test "evaluator can evaluate prefix and infix expressions" do
@@ -22,8 +22,12 @@ defmodule EvaluatorTest do
 
     inputs_and_outputs
     |> Enum.each(fn {input, expected_output} ->
-      {:ok, result} =
-        input |> Lexer.init() |> Parser.init() |> Parser.parse_program() |> Evaluator.evaluate()
+      {:ok, result, _environment} =
+        input
+        |> Lexer.init()
+        |> Parser.init()
+        |> Parser.parse_program()
+        |> Evaluator.evaluate(Ast.Environment.init())
 
       assert result == expected_output
     end)
@@ -43,8 +47,12 @@ defmodule EvaluatorTest do
 
     inputs_and_outputs
     |> Enum.each(fn {input, expected_output} ->
-      {:ok, result} =
-        input |> Lexer.init() |> Parser.init() |> Parser.parse_program() |> Evaluator.evaluate()
+      {:ok, result, _environment} =
+        input
+        |> Lexer.init()
+        |> Parser.init()
+        |> Parser.parse_program()
+        |> Evaluator.evaluate(Ast.Environment.init())
 
       assert result == expected_output
     end)
@@ -65,9 +73,34 @@ defmodule EvaluatorTest do
     inputs_and_outputs
     |> Enum.each(fn {input, expected_output} ->
       {:error, reason} =
-        input |> Lexer.init() |> Parser.init() |> Parser.parse_program() |> Evaluator.evaluate()
+        input
+        |> Lexer.init()
+        |> Parser.init()
+        |> Parser.parse_program()
+        |> Evaluator.evaluate(Ast.Environment.init())
 
       assert reason == expected_output
+    end)
+  end
+
+  test "evaluator can evaluate let statements" do
+    inputs_and_outputs = [
+      {"let a = 5; a;", 5},
+      {"let a = 5 * 5; a;", 25},
+      {"let a = 5; let b = a; b;", 5},
+      {"let a = 5; let b = a; let c = a + b + 5; c;", 15}
+    ]
+
+    inputs_and_outputs
+    |> Enum.each(fn {input, expected_output} ->
+      {:ok, value, _environment} =
+        input
+        |> Lexer.init()
+        |> Parser.init()
+        |> Parser.parse_program()
+        |> Evaluator.evaluate(Ast.Environment.init())
+
+      assert value == expected_output
     end)
   end
 end

@@ -1,5 +1,5 @@
 defmodule MonkeyInterpreter.Repl do
-  alias MonkeyInterpreter.{Lexer, Parser, Evaluator}
+  alias MonkeyInterpreter.{Lexer, Parser, Evaluator, Ast}
 
   @spec start() :: no_return()
   def start do
@@ -9,11 +9,11 @@ defmodule MonkeyInterpreter.Repl do
       "Hello, #{username}! This is the Monkey programming language!\nFeel free to type in commands\n"
     )
 
-    read_loop()
+    read_loop(Ast.Environment.init())
   end
 
-  @spec read_loop() :: no_return()
-  def read_loop() do
+  @spec read_loop(Ast.Environment.t()) :: no_return()
+  def read_loop(environment) do
     input = IO.gets(">> ")
 
     case input do
@@ -25,18 +25,24 @@ defmodule MonkeyInterpreter.Repl do
       {:error, reason} ->
         IO.puts("Error: #{reason}")
 
-      # Display the parsed AST, then recurse infinitely.
+      # Evaluate the input, display it, then recurse infinitely. Make sure to pass in the updated environment.
       input ->
-        case input
-             |> Lexer.init()
-             |> Parser.init()
-             |> Parser.parse_program()
-             |> Evaluator.evaluate() do
-          {:error, reason} -> IO.puts(:stderr, "ERROR: #{reason}")
-          {:ok, value} -> IO.puts(value)
-        end
+        environment =
+          case input
+               |> Lexer.init()
+               |> Parser.init()
+               |> Parser.parse_program()
+               |> Evaluator.evaluate(environment) do
+            {:error, reason} ->
+              IO.puts(:stderr, "ERROR: #{reason}")
+              environment
 
-        read_loop()
+            {:ok, value, new_environment} ->
+              IO.puts(value)
+              new_environment
+          end
+
+        read_loop(environment)
     end
   end
 

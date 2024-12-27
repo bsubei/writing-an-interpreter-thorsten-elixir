@@ -142,4 +142,26 @@ defmodule MonkeyInterpreter.Ast do
     @enforce_keys [:operator_token, :left_expression, :right_expression]
     defstruct @enforce_keys
   end
+
+  # TODO these two probably shouldn't live under Ast.
+
+  # # This is the object representation of a function/closure, not the same as FunctionLiteral, which is an AST node.
+  # defmodule Function do
+  #   @type t :: %__MODULE__{
+  #           parameters: list(Ast.Identifier.t()),
+  #           body: Ast.BlockStatement.t(),
+  #           environment: Ast.Environment.t()
+  #         }
+  #   @enforce_keys [:parameters, :body, :environment]
+  #   defstruct @enforce_keys
+  # end
+
+  # Think of this as the available bindings in the current "scope". It may also contain the outer environment.
+  defmodule Environment do
+    @type t :: %__MODULE__{bindings: %{String.t() => any()}, outer_environment: t() | nil}
+    @enforce_keys [:bindings, :outer_environment]
+    defstruct @enforce_keys
+
+    def init(), do: %__MODULE__{bindings: %{}, outer_environment: nil}
+  end
 end
