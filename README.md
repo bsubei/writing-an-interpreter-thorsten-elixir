@@ -3,4 +3,4 @@
 
  # TODOs
  - Figure out why the dialyzer is not warning when we explicitly use incorrect atoms in TokenType.t().
- - TODO
+ - Remove all the "literal" fields in the AST nodes, since I'm not using them like the book does in the tests.

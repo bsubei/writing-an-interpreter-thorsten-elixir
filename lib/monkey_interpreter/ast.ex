@@ -59,6 +59,7 @@ defmodule MonkeyInterpreter.Ast do
             {:identifier, Ast.Identifier.t()}
             | {:boolean, Ast.Boolean.t()}
             | {:integer, Ast.IntegerLiteral.t()}
+            | {:string, Ast.StringLiteral.t()}
             | {:grouped, Ast.GroupedExpression.t()}
             | {:if_expression, Ast.IfExpression.t()}
             | {:function_literal, Ast.FunctionLiteral.t()}
@@ -83,6 +84,12 @@ defmodule MonkeyInterpreter.Ast do
 
   defmodule IntegerLiteral do
     @type t :: %__MODULE__{token: Token.t(), value: integer()}
+    @enforce_keys [:token, :value]
+    defstruct @enforce_keys
+  end
+
+  defmodule StringLiteral do
+    @type t :: %__MODULE__{token: Token.t(), value: binary()}
     @enforce_keys [:token, :value]
     defstruct @enforce_keys
   end

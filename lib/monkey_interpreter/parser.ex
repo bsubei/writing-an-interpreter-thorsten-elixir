@@ -146,6 +146,11 @@ defmodule MonkeyInterpreter.Parser do
     {expression, rest}
   end
 
+  defp parse_prefix([%Token{type: :string} = token | rest]) do
+    expression = {:string, %Ast.StringLiteral{token: token, value: token.literal}}
+    {expression, rest}
+  end
+
   defp parse_prefix([%Token{type: true} = token | rest]) do
     {{:boolean, %Ast.Boolean{token: token, value: true}}, rest}
   end

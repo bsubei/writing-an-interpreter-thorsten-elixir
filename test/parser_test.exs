@@ -68,7 +68,7 @@ defmodule ParserTest do
     end
   end
 
-  test "parser can parse literal expression statements" do
+  test "parser can parse int literal expression statements" do
     program = "5;" |> Lexer.init() |> Parser.init() |> Parser.parse_program()
     assert length(program.statements) == 1
 
@@ -78,6 +78,20 @@ defmodule ParserTest do
           {:integer, integer_literal} ->
             assert integer_literal.token == %Token{type: :int, literal: "5"}
             assert integer_literal.value == 5
+        end
+    end
+  end
+
+  test "parser can parse string literal expression statements" do
+    program = "\"foobar\";" |> Lexer.init() |> Parser.init() |> Parser.parse_program()
+    assert length(program.statements) == 1
+
+    case program.statements |> List.first() do
+      {:expression_statement, stmt} ->
+        case stmt.expression do
+          {:string, string_literal} ->
+            assert string_literal.token == %Token{type: :string, literal: "foobar"}
+            assert string_literal.value == "foobar"
         end
     end
   end
