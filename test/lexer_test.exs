@@ -23,6 +23,8 @@ if (5 < 10) {
 
 10 == 10;
 10 != 9;
+\"foobar\"
+\"foo bar\"
 "
 
     expected_tokens = [
@@ -99,6 +101,8 @@ if (5 < 10) {
       Token.init(:not_eq, "!="),
       Token.init(:int, "9"),
       Token.init(:semicolon, ";"),
+      Token.init(:string, "foobar"),
+      Token.init(:string, "foo bar"),
       Token.init(:eof, "")
     ]
 

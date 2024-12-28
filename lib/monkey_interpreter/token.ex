@@ -4,6 +4,7 @@ defmodule MonkeyInterpreter.TokenType do
           | :eof
           | :ident
           | :int
+          | :string
           | :assign
           | :plus
           | :minus
@@ -170,6 +171,7 @@ defmodule MonkeyInterpreter.Token do
 
   defp user_displayed_type(value) when is_boolean(value), do: "BOOLEAN"
   defp user_displayed_type(value) when is_integer(value), do: "INTEGER"
+  defp user_displayed_type(value) when is_binary(value), do: "STRING"
   defp user_displayed_type(value) when is_nil(value), do: "NULL"
 
   # TODO double check whether the definition of truthy/falsey in the Monkey language differs from Elixir (the host language).
