@@ -1,6 +1,6 @@
 defmodule EvaluatorTest do
   use ExUnit.Case
-  alias MonkeyInterpreter.{Lexer, Parser, Evaluator, Ast}
+  alias MonkeyInterpreter.{Lexer, Parser, Evaluator, Environment}
   doctest Evaluator
 
   test "evaluator can evaluate prefix and infix expressions" do
@@ -22,14 +22,14 @@ defmodule EvaluatorTest do
 
     inputs_and_outputs
     |> Enum.each(fn {input, expected_output} ->
-      {:ok, result, _environment} =
+      {:ok, object, _environment} =
         input
         |> Lexer.init()
         |> Parser.init()
         |> Parser.parse_program()
-        |> Evaluator.evaluate(Ast.Environment.init())
+        |> Evaluator.evaluate(Environment.init())
 
-      assert result == expected_output
+      assert object == expected_output
     end)
   end
 
@@ -47,14 +47,14 @@ defmodule EvaluatorTest do
 
     inputs_and_outputs
     |> Enum.each(fn {input, expected_output} ->
-      {:ok, result, _environment} =
+      {:ok, object, _environment} =
         input
         |> Lexer.init()
         |> Parser.init()
         |> Parser.parse_program()
-        |> Evaluator.evaluate(Ast.Environment.init())
+        |> Evaluator.evaluate(Environment.init())
 
-      assert result == expected_output
+      assert object == expected_output
     end)
   end
 
@@ -67,7 +67,11 @@ defmodule EvaluatorTest do
       {"5; true + false; 5;", "type mismatch: BOOLEAN + BOOLEAN"},
       {"if (10 > 1) { true + false; }", "type mismatch: BOOLEAN + BOOLEAN"},
       {"if (true) { if (true) {return true + false;}; return 0;}",
-       "type mismatch: BOOLEAN + BOOLEAN"}
+       "type mismatch: BOOLEAN + BOOLEAN"},
+      {"x;", "identifier not found: x"},
+      {"let x = y;", "identifier not found: y"},
+      {"let x = 5; let y = x; let z = f", "identifier not found: f"},
+      {"fn (x, y) {return z;}(1,2)", "identifier not found: z"}
     ]
 
     inputs_and_outputs
@@ -77,7 +81,7 @@ defmodule EvaluatorTest do
         |> Lexer.init()
         |> Parser.init()
         |> Parser.parse_program()
-        |> Evaluator.evaluate(Ast.Environment.init())
+        |> Evaluator.evaluate(Environment.init())
 
       assert reason == expected_output
     end)
@@ -93,14 +97,67 @@ defmodule EvaluatorTest do
 
     inputs_and_outputs
     |> Enum.each(fn {input, expected_output} ->
-      {:ok, value, _environment} =
+      {:ok, object, _environment} =
         input
         |> Lexer.init()
         |> Parser.init()
         |> Parser.parse_program()
-        |> Evaluator.evaluate(Ast.Environment.init())
+        |> Evaluator.evaluate(Environment.init())
 
-      assert value == expected_output
+      assert object == expected_output
+    end)
+  end
+
+  test "evaluator can evaluate function application" do
+    inputs_and_outputs = [
+      {"let identity = fn(x) { x; }; identity(5);", 5},
+      {"let identity = fn(x) { return x; }; identity(5);", 5},
+      {"let double = fn(x) { x * 2; }; double(5);", 10},
+      {"let add = fn(x, y) { x + y; }; add(5, 5);", 10},
+      {"let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20},
+      {"fn(x) { x; }(5)", 5}
+    ]
+
+    inputs_and_outputs
+    |> Enum.each(fn {input, expected_output} ->
+      {:ok, object, _environment} =
+        input
+        |> Lexer.init()
+        |> Parser.init()
+        |> Parser.parse_program()
+        |> Evaluator.evaluate(Environment.init())
+
+      assert object == expected_output
+    end)
+  end
+
+  test "evaluator can evaluate with scoping rules respected" do
+    inputs_and_outputs = [
+      {"
+let first = 10;
+let second = 10;
+let third = 10;
+
+let ourFunction = fn(first) {
+  let second = 20;
+
+  first + second + third;
+};
+
+ourFunction(20) + first + second;
+      ", 70}
+    ]
+
+    inputs_and_outputs
+    |> Enum.each(fn {input, expected_output} ->
+      {:ok, object, _environment} =
+        input
+        |> Lexer.init()
+        |> Parser.init()
+        |> Parser.parse_program()
+        |> Evaluator.evaluate(Environment.init())
+
+      assert object == expected_output
     end)
   end
 end

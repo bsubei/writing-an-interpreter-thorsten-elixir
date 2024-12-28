@@ -1,5 +1,5 @@
 defmodule MonkeyInterpreter.Repl do
-  alias MonkeyInterpreter.{Lexer, Parser, Evaluator, Ast}
+  alias MonkeyInterpreter.{Lexer, Parser, Evaluator, Environment}
 
   @spec start() :: no_return()
   def start do
@@ -9,10 +9,10 @@ defmodule MonkeyInterpreter.Repl do
       "Hello, #{username}! This is the Monkey programming language!\nFeel free to type in commands\n"
     )
 
-    read_loop(Ast.Environment.init())
+    read_loop(Environment.init())
   end
 
-  @spec read_loop(Ast.Environment.t()) :: no_return()
+  @spec read_loop(Environment.t()) :: no_return()
   def read_loop(environment) do
     input = IO.gets(">> ")
 

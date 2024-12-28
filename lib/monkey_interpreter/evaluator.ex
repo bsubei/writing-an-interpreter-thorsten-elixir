@@ -1,8 +1,8 @@
 defmodule MonkeyInterpreter.Evaluator do
-  alias MonkeyInterpreter.{Ast, Token}
+  alias MonkeyInterpreter.{Ast, Token, Object, Function, Environment}
 
-  @spec evaluate(Ast.Program.t(), Ast.Environment.t()) ::
-          {:ok, any(), Ast.Environment.t()} | {:error, String.t()}
+  @spec evaluate(Ast.Program.t(), Environment.t()) ::
+          {:ok, Object.t(), Environment.t()} | {:error, String.t()}
   def evaluate(%Ast.Program{} = program, environment) do
     # Eval all the statements (stop early after you encounter a :return_statement) and return the value of the last one.
     program.statements
@@ -17,8 +17,8 @@ defmodule MonkeyInterpreter.Evaluator do
   end
 
   # The :returned atom indicates this value was returned as part of a return statement, so subsequent statements should not be evaluated and we should return "early".
-  @spec eval(Ast.Node.t(), Ast.Environment.t()) ::
-          {:ok | :returned, any(), Ast.Environment.t()} | {:error, String.t()}
+  @spec eval(Ast.Node.t(), Environment.t()) ::
+          {:ok | :returned, Object.t(), Environment.t()} | {:error, String.t()}
 
   defp eval({:let_statement, %Ast.LetStatement{} = stmt}, environment) do
     # Evaluate the right-hand side.
@@ -50,8 +50,8 @@ defmodule MonkeyInterpreter.Evaluator do
   defp eval({:block_statement, %Ast.BlockStatement{} = stmt}, environment) do
     # Eval all the statements (stop early after you encounter a :return_statement) and return the value of the last one.
     stmt.statements
-    |> Enum.reduce_while(nil, fn
-      stmt, _acc ->
+    |> Enum.reduce_while({:ok, nil, environment}, fn
+      stmt, {:ok, _value, environment} ->
         case eval(stmt, environment) do
           {:ok, _, _} = result -> {:cont, result}
           {:error, _} = result -> {:halt, result}
@@ -60,11 +60,18 @@ defmodule MonkeyInterpreter.Evaluator do
     end)
   end
 
-  defp eval({:identifier, %Ast.Identifier{value: value}}, environment) do
-    # TODO look up the value in the current environment (and if not found, in the outer environments recursively).
-    case Map.get(environment.bindings, value) do
-      nil -> {:error, "identifier not found: #{value}"}
-      value -> {:ok, value, environment}
+  defp eval({:identifier, %Ast.Identifier{value: identifier_name}} = input, environment) do
+    # Look up the value of the identifier in the current environment. If not found, look in the outer environments recursively.
+    case Map.get(environment.bindings, identifier_name) do
+      nil when environment.outer_environment == nil ->
+        {:error, "identifier not found: #{identifier_name}"}
+
+      nil ->
+        # TODO possible bug: the outer_environment shouldn't be returned, instead the original environment should be returned.
+        eval(input, environment.outer_environment)
+
+      value ->
+        {:ok, value, environment}
     end
   end
 
@@ -96,14 +103,31 @@ defmodule MonkeyInterpreter.Evaluator do
     end
   end
 
-  defp eval({:function_literal, %Ast.FunctionLiteral{} = _expr}, _environment) do
-    # TODO this is just an anonymous function, there's nothing to "eval"...
-    raise("Function literal unimplemented")
+  defp eval({:function_literal, %Ast.FunctionLiteral{} = expr}, environment) do
+    # Store the enclosing environment so it can be used when the function is applied/invoked, i.e. make it a closure.
+    function = %Function{parameters: expr.parameters, body: expr.body, environment: environment}
+    {:ok, function, environment}
   end
 
-  defp eval({:call_expression, %Ast.CallExpression{} = _expr}, _environment) do
-    # TODO if function refers to a callable, then make the call. Otherwise, throw an error.
-    raise("Call expression unimplemented")
+  defp eval({:call_expression, %Ast.CallExpression{} = expr}, environment) do
+    # Evaluate the function identifier or literal.
+    case eval(expr.function, environment) do
+      {:error, reason} ->
+        {:error, reason}
+
+      {:ok, %Function{} = function, environment} ->
+        # Evaluate the arguments.
+        case eval_args(expr.arguments, environment) do
+          {:error, reason} -> {:error, reason}
+          {:ok, args, environment} -> apply_function(function, args, environment)
+        end
+
+      {:ok, unknown_expr, _env} ->
+        {:error, "expected function, got: #{unknown_expr}"}
+
+      {:returned, expr, _env} ->
+        {:error, "did not expect a :returned expression: #{expr}"}
+    end
   end
 
   defp eval({:prefix, %Ast.Prefix{operator_token: token} = expr}, environment) do
@@ -122,7 +146,7 @@ defmodule MonkeyInterpreter.Evaluator do
           end
       end
     else
-      raise("Invalid prefix operator: #{inspect(token)}")
+      {:error, "Invalid prefix operator: #{inspect(token)}"}
     end
   end
 
@@ -147,11 +171,43 @@ defmodule MonkeyInterpreter.Evaluator do
           end
       end
     else
-      raise("Invalid infix operator: #{inspect(expr.operator_token)}")
+      {:error, "Invalid prefix operator: #{inspect(expr.operator_token)}"}
     end
   end
 
   defp eval(x, _environment) do
-    raise("Unimplemented eval: #{inspect(x)}")
+    {:error, "Unimplemented eval for: #{inspect(x)}"}
+  end
+
+  @spec eval_args(list(Ast.Expression.t()), Environment.t(), list(Object.t())) ::
+          {:ok, list(Object.t()), Environment.t()} | {:error, String.t()}
+  defp eval_args(args, environment, acc \\ [])
+
+  defp eval_args([], environment, acc), do: {:ok, acc, environment}
+
+  defp eval_args([arg | rest], environment, acc) do
+    case(eval(arg, environment)) do
+      {:error, reason} -> {:error, reason}
+      {:ok, value, _env} -> eval_args(rest, environment, acc ++ [value])
+    end
+  end
+
+  @spec apply_function(Function.t(), list(Object.t()), Environment.t()) ::
+          {:ok, Object.t(), Environment.t()} | {:error, String.t()}
+  defp apply_function(function, args, caller_environment) do
+    # Create a new inner environment that contains the function parameters as bindings to the arguments.
+    new_bindings =
+      Enum.zip(function.parameters, args)
+      |> Enum.map(fn {param, arg} -> {param.value, arg} end)
+      |> Enum.into(%{})
+
+    new_environment = %Environment{bindings: new_bindings, outer_environment: caller_environment}
+
+    # Do not bubble up :returned. Also, discard the inner environment after using it.
+    case eval(function.body, new_environment) do
+      {:error, reason} -> {:error, reason}
+      {:returned, value, _env} -> {:ok, value, caller_environment}
+      {:ok, value, _env} -> {:ok, value, caller_environment}
+    end
   end
 end
