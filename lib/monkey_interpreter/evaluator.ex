@@ -83,6 +83,10 @@ defmodule MonkeyInterpreter.Evaluator do
     {:ok, value, environment}
   end
 
+  defp eval({:string, %Ast.StringLiteral{value: value}}, environment) do
+    {:ok, value, environment}
+  end
+
   defp eval({:grouped, %Ast.GroupedExpression{expression: expression}}, environment) do
     eval(expression, environment)
   end

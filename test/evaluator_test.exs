@@ -17,7 +17,8 @@ defmodule EvaluatorTest do
       # Test infix expressions, included grouped ones.
       {"1+1", 1 + 1},
       {"2*4", 2 * 4},
-      {"(1 + 1) / 2", (1 + 1) / 2}
+      {"(1 + 1) / 2", (1 + 1) / 2},
+      {"\"foo bar\"", "foo bar"}
     ]
 
     inputs_and_outputs
@@ -71,7 +72,8 @@ defmodule EvaluatorTest do
       {"x;", "identifier not found: x"},
       {"let x = y;", "identifier not found: y"},
       {"let x = 5; let y = x; let z = f", "identifier not found: f"},
-      {"fn (x, y) {return z;}(1,2)", "identifier not found: z"}
+      {"fn (x, y) {return z;}(1,2)", "identifier not found: z"},
+      {"\"Hello\" - \"World\"", "type mismatch: STRING - STRING"}
     ]
 
     inputs_and_outputs
@@ -146,6 +148,25 @@ let ourFunction = fn(first) {
 
 ourFunction(20) + first + second;
       ", 70}
+    ]
+
+    inputs_and_outputs
+    |> Enum.each(fn {input, expected_output} ->
+      {:ok, object, _environment} =
+        input
+        |> Lexer.init()
+        |> Parser.init()
+        |> Parser.parse_program()
+        |> Evaluator.evaluate(Environment.init())
+
+      assert object == expected_output
+    end)
+  end
+
+  test "evaluator can evaluate string concatenation" do
+    inputs_and_outputs = [
+      {"\"foo\" + \"bar\"", "foobar"},
+      {"let s1 = \"Hello\"; let s2 = \"World\"; s1 + \", \" + s2 + \"!\"", "Hello, World!"}
     ]
 
     inputs_and_outputs
