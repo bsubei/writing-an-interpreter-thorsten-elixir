@@ -135,8 +135,7 @@ defmodule EvaluatorTest do
 
   test "evaluator can evaluate with scoping rules respected" do
     inputs_and_outputs = [
-      {"
-let first = 10;
+      {~s'let first = 10;
 let second = 10;
 let third = 10;
 
@@ -146,8 +145,13 @@ let ourFunction = fn(first) {
   first + second + third;
 };
 
-ourFunction(20) + first + second;
-      ", 70}
+ourFunction(20) + first + second;', 70},
+      # Make sure that builtins can be shadowed by local scope bindings.
+      {"let len = 5; len;", 5},
+      {"let len = fn(x) {x + 1}; len(1);", 2},
+      {"let foo = fn(a) { a + 1 }; let bar = fn(b) {foo(b)}; bar(1)", 2}
+      # TODO this test is causing an infinite loop, there's probably a bug with the builtin resolution and shadowing.
+      # {~s'let len = fn(a) {len(a)}; len("hi");', 2}
     ]
 
     inputs_and_outputs

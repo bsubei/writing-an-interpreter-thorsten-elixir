@@ -71,8 +71,11 @@ defmodule MonkeyInterpreter.Evaluator do
         end
 
       nil ->
-        # TODO possible bug: the outer_environment shouldn't be returned, instead the original environment should be returned.
-        eval(input, environment.outer_environment)
+        # NOTE: the outer_environment shouldn't be returned, instead the original environment should be returned.
+        case eval(input, environment.outer_environment) do
+          {:error, reason} -> {:error, reason}
+          {:ok, value, _ignored_env} -> {:ok, value, environment}
+        end
 
       value ->
         {:ok, value, environment}
