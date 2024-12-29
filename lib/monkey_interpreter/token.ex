@@ -105,10 +105,23 @@ defmodule MonkeyInterpreter.Token do
   # TODO update type spec of returned function
   # Return an operator (a function) that checks the types before doing the operation.
   @spec to_infix_operator(t()) :: fun()
-  def to_infix_operator(token) when token.type in [:plus, :minus, :asterisk, :slash, :gt, :lt] do
+  def to_infix_operator(%__MODULE__{type: :plus, literal: literal}) do
+    fn
+      left, right when is_integer(left) and is_integer(right) ->
+        {:ok, Kernel.+(left, right)}
+
+      left, right when is_binary(left) and is_binary(right) ->
+        {:ok, Kernel.<>(left, right)}
+
+      left, right ->
+        {:error,
+         "type mismatch: #{user_displayed_type(left)} #{literal} #{user_displayed_type(right)}"}
+    end
+  end
+
+  def to_infix_operator(token) when token.type in [:minus, :asterisk, :slash, :gt, :lt] do
     operator =
       case token.type do
-        :plus -> &Kernel.+/2
         :minus -> &Kernel.-/2
         :asterisk -> &Kernel.*/2
         :slash -> &Kernel.//2
@@ -136,6 +149,9 @@ defmodule MonkeyInterpreter.Token do
 
     fn
       left, right when is_integer(left) and is_integer(right) ->
+        {:ok, operator.(left, right)}
+
+      left, right when is_binary(left) and is_binary(right) ->
         {:ok, operator.(left, right)}
 
       left, right when is_boolean(left) and is_boolean(right) ->

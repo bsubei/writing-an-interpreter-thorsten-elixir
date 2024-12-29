@@ -166,7 +166,7 @@ ourFunction(20) + first + second;
   test "evaluator can evaluate string concatenation" do
     inputs_and_outputs = [
       {"\"foo\" + \"bar\"", "foobar"},
-      {"let s1 = \"Hello\"; let s2 = \"World\"; s1 + \", \" + s2 + \"!\"", "Hello, World!"}
+      {"let foo = \"Hello\"; let bar = \"World\"; foo + \", \" + bar + \"!\"", "Hello, World!"}
     ]
 
     inputs_and_outputs
