@@ -181,4 +181,59 @@ ourFunction(20) + first + second;
       assert object == expected_output
     end)
   end
+
+  test "evaluator can evaluate builtin functions" do
+    inputs_and_outputs = [
+      {~s'len("")', 0},
+      {~s'len("four")', 4},
+      {~s'len("hello world")', 11}
+      # {~s'len([1, 2, 3])', 3},
+      # {~s'len([])', 0}
+      # {~s'puts("hello", "world!")', nil},
+      # {~s'first([1, 2, 3])', 1},
+      # {~s'first([])', nil},
+      # {~s'first(1)', "argument to `first` must be ARRAY, got INTEGER"},
+      # {~s'last([1, 2, 3])', 3},
+      # {~s'last([])', nil},
+      # {~s'last(1)', "argument to `last` must be ARRAY, got INTEGER"},
+      # {~s'rest([1, 2, 3])', []int{2, 3}},
+      # {~s'rest([])', nil},
+      # {~s'push([], 1)', []int{1}},
+      # {~s'push(1, 1)', "argument to `push` must be ARRAY, got INTEGER"},
+    ]
+
+    inputs_and_outputs
+    |> Enum.each(fn {input, expected_output} ->
+      {:ok, object, _environment} =
+        input
+        |> Lexer.init()
+        |> Parser.init()
+        |> Parser.parse_program()
+        |> Evaluator.evaluate(Environment.init())
+
+      assert object == expected_output
+    end)
+  end
+
+  test "evaluator can handle builtin function errors" do
+    inputs_and_outputs = [
+      {~s'len(1)', "argument to `len` not supported, got INTEGER"},
+      {~s'len("one", "two")', "wrong number of arguments. got=2, want=1"}
+      # {~s'first(1)', "argument to `first` must be ARRAY, got INTEGER"},
+      # {~s'last(1)', "argument to `last` must be ARRAY, got INTEGER"},
+      # {~s'push(1, 1)', "argument to `push` must be ARRAY, got INTEGER"},
+    ]
+
+    inputs_and_outputs
+    |> Enum.each(fn {input, expected_output} ->
+      {:error, reason} =
+        input
+        |> Lexer.init()
+        |> Parser.init()
+        |> Parser.parse_program()
+        |> Evaluator.evaluate(Environment.init())
+
+      assert reason == expected_output
+    end)
+  end
 end

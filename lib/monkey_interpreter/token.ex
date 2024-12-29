@@ -185,10 +185,10 @@ defmodule MonkeyInterpreter.Token do
     end
   end
 
-  defp user_displayed_type(value) when is_boolean(value), do: "BOOLEAN"
-  defp user_displayed_type(value) when is_integer(value), do: "INTEGER"
-  defp user_displayed_type(value) when is_binary(value), do: "STRING"
-  defp user_displayed_type(value) when is_nil(value), do: "NULL"
+  def user_displayed_type(value) when is_boolean(value), do: "BOOLEAN"
+  def user_displayed_type(value) when is_integer(value), do: "INTEGER"
+  def user_displayed_type(value) when is_binary(value), do: "STRING"
+  def user_displayed_type(value) when is_nil(value), do: "NULL"
 
   # TODO double check whether the definition of truthy/falsey in the Monkey language differs from Elixir (the host language).
   @spec is_truthy(any()) :: boolean()

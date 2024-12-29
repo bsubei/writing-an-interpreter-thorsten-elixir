@@ -1,5 +1,5 @@
 defmodule MonkeyInterpreter.Evaluator do
-  alias MonkeyInterpreter.{Ast, Token, Object, Function, Environment}
+  alias MonkeyInterpreter.{Ast, Token, Object, Function, Environment, Builtin}
 
   @spec evaluate(Ast.Program.t(), Environment.t()) ::
           {:ok, Object.t(), Environment.t()} | {:error, String.t()}
@@ -64,7 +64,11 @@ defmodule MonkeyInterpreter.Evaluator do
     # Look up the value of the identifier in the current environment. If not found, look in the outer environments recursively.
     case Map.get(environment.bindings, identifier_name) do
       nil when environment.outer_environment == nil ->
-        {:error, "identifier not found: #{identifier_name}"}
+        # Once we're in the outermost environment, check for builtin functions, otherwise we're out of places to search so error out.
+        case Builtin.builtins() |> Map.get(identifier_name) do
+          nil -> {:error, "identifier not found: #{identifier_name}"}
+          builtin -> {:ok, builtin, environment}
+        end
 
       nil ->
         # TODO possible bug: the outer_environment shouldn't be returned, instead the original environment should be returned.
@@ -119,11 +123,24 @@ defmodule MonkeyInterpreter.Evaluator do
       {:error, reason} ->
         {:error, reason}
 
+      # User-defined functions.
       {:ok, %Function{} = function, environment} ->
-        # Evaluate the arguments.
         case eval_args(expr.arguments, environment) do
           {:error, reason} -> {:error, reason}
           {:ok, args, environment} -> apply_function(function, args, environment)
+        end
+
+      # Builtin functions.
+      {:ok, %Builtin{func: function}, environment} ->
+        case eval_args(expr.arguments, environment) do
+          {:error, reason} ->
+            {:error, reason}
+
+          {:ok, args, environment} ->
+            case function.(args) do
+              {:error, reason} -> {:error, reason}
+              {:ok, value} -> {:ok, value, environment}
+            end
         end
 
       {:ok, unknown_expr, _env} ->
