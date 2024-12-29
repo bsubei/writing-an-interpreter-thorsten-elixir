@@ -118,33 +118,32 @@ defmodule MonkeyInterpreter.Evaluator do
   end
 
   defp eval({:call_expression, %Ast.CallExpression{} = expr}, environment) do
-    # Evaluate the function identifier or literal.
+    # Evaluate the function identifier or literal first.
     case eval(expr.function, environment) do
       {:error, reason} ->
         {:error, reason}
 
-      # User-defined functions.
-      {:ok, %Function{} = function, environment} ->
-        case eval_args(expr.arguments, environment) do
-          {:error, reason} -> {:error, reason}
-          {:ok, args, environment} -> apply_function(function, args, environment)
-        end
-
-      # Builtin functions.
-      {:ok, %Builtin{func: function}, environment} ->
+      {:ok, function, environment} ->
+        # Then evaluate the arguments.
         case eval_args(expr.arguments, environment) do
           {:error, reason} ->
             {:error, reason}
 
           {:ok, args, environment} ->
-            case function.(args) do
-              {:error, reason} -> {:error, reason}
-              {:ok, value} -> {:ok, value, environment}
+            case function do
+              %Function{} ->
+                apply_function(function, args, environment)
+
+              %Builtin{func: function} ->
+                case function.(args) do
+                  {:error, reason} -> {:error, reason}
+                  {:ok, value} -> {:ok, value, environment}
+                end
+
+              unknown_expr ->
+                {:error, "expected function literal or identifier, got: #{unknown_expr}"}
             end
         end
-
-      {:ok, unknown_expr, _env} ->
-        {:error, "expected function, got: #{unknown_expr}"}
 
       {:returned, expr, _env} ->
         {:error, "did not expect a :returned expression: #{expr}"}
