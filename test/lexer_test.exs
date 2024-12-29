@@ -4,7 +4,7 @@ defmodule LexerTest do
   doctest Lexer
 
   test "lexer can lex a basic program and check every token using all_tokens" do
-    input = "let five = 5;
+    input = ~s'let five = 5;
 let ten = 10;
 
 let add = fn(x, y) {
@@ -23,9 +23,9 @@ if (5 < 10) {
 
 10 == 10;
 10 != 9;
-\"foobar\"
-\"foo bar\"
-"
+"foobar"
+"foo bar"
+'
 
     expected_tokens = [
       Token.init(:let, "let"),

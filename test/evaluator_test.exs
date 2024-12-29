@@ -18,7 +18,7 @@ defmodule EvaluatorTest do
       {"1+1", 1 + 1},
       {"2*4", 2 * 4},
       {"(1 + 1) / 2", (1 + 1) / 2},
-      {"\"foo bar\"", "foo bar"}
+      {~s'"foo bar"', "foo bar"}
     ]
 
     inputs_and_outputs
@@ -73,7 +73,7 @@ defmodule EvaluatorTest do
       {"let x = y;", "identifier not found: y"},
       {"let x = 5; let y = x; let z = f", "identifier not found: f"},
       {"fn (x, y) {return z;}(1,2)", "identifier not found: z"},
-      {"\"Hello\" - \"World\"", "type mismatch: STRING - STRING"}
+      {~s'"Hello" - "World"', "type mismatch: STRING - STRING"}
     ]
 
     inputs_and_outputs
@@ -165,8 +165,8 @@ ourFunction(20) + first + second;
 
   test "evaluator can evaluate string concatenation" do
     inputs_and_outputs = [
-      {"\"foo\" + \"bar\"", "foobar"},
-      {"let foo = \"Hello\"; let bar = \"World\"; foo + \", \" + bar + \"!\"", "Hello, World!"}
+      {~s'"foo" + "bar"', "foobar"},
+      {~s'let foo = "Hello"; let bar = "World"; foo + ", " + bar + "!"', "Hello, World!"}
     ]
 
     inputs_and_outputs

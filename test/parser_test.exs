@@ -83,7 +83,7 @@ defmodule ParserTest do
   end
 
   test "parser can parse string literal expression statements" do
-    program = "\"foobar\";" |> Lexer.init() |> Parser.init() |> Parser.parse_program()
+    program = ~s'"foobar"' |> Lexer.init() |> Parser.init() |> Parser.parse_program()
     assert length(program.statements) == 1
 
     case program.statements |> List.first() do
