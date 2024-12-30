@@ -1,6 +1,6 @@
 defmodule EvaluatorTest do
   use ExUnit.Case
-  alias MonkeyInterpreter.{Lexer, Parser, Evaluator, Environment}
+  alias MonkeyInterpreter.{Lexer, Parser, Evaluator, Environment, Array}
   doctest Evaluator
 
   test "evaluator can evaluate prefix and infix expressions" do
@@ -18,7 +18,15 @@ defmodule EvaluatorTest do
       {"1+1", 1 + 1},
       {"2*4", 2 * 4},
       {"(1 + 1) / 2", (1 + 1) / 2},
-      {~s'"foo bar"', "foo bar"}
+      {~s'"foo bar"', "foo bar"},
+      {"[1, 2 * 2, 3 + 3]", %Array{elements: [1, 4, 6]}},
+      {"[[1, 1 + 1], [3 * 1, 2 * 2]]",
+       %Array{
+         elements: [
+           %Array{elements: [1, 2]},
+           %Array{elements: [3, 4]}
+         ]
+       }}
     ]
 
     inputs_and_outputs

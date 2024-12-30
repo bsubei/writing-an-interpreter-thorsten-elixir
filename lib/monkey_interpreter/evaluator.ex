@@ -1,5 +1,5 @@
 defmodule MonkeyInterpreter.Evaluator do
-  alias MonkeyInterpreter.{Ast, Token, Object, Function, Environment, Builtin}
+  alias MonkeyInterpreter.{Ast, Token, Object, Function, Environment, Builtin, Array}
 
   @spec evaluate(Ast.Program.t(), Environment.t()) ::
           {:ok, Object.t(), Environment.t()} | {:error, String.t()}
@@ -111,6 +111,21 @@ defmodule MonkeyInterpreter.Evaluator do
 
         # If the alternative is chosen but it doesn't exist, return nil.
         if clause != nil, do: eval(clause, environment), else: {:ok, nil, environment}
+    end
+  end
+
+  defp eval({:array, %Ast.ArrayLiteral{} = expr}, environment) do
+    # Eval and collect all the expressions in the array literal (stop early after you encounter an :error).
+    case expr.elements
+         |> Enum.reduce_while([], fn
+           expression, acc ->
+             case eval(expression, environment) do
+               {:ok, object, _env} -> {:cont, acc ++ [object]}
+               {:error, reason} -> {:halt, {:error, reason}}
+             end
+         end) do
+      {:error, reason} -> {:error, reason}
+      objects -> {:ok, %Array{elements: objects}, environment}
     end
   end
 
