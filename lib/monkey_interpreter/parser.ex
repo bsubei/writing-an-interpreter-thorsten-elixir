@@ -171,6 +171,10 @@ defmodule MonkeyInterpreter.Parser do
     parse_grouped_expression(tokens)
   end
 
+  defp parse_prefix([%Token{type: :lbracket} | _rest] = tokens) do
+    parse_array_literal(tokens)
+  end
+
   defp parse_prefix([%Token{type: :if} | _rest] = tokens) do
     parse_if_expression(tokens)
   end
@@ -239,6 +243,20 @@ defmodule MonkeyInterpreter.Parser do
 
     expression = {:grouped, %Ast.GroupedExpression{expression: expression}}
     {expression, rest}
+  end
+
+  @spec parse_array_literal(list(Token.t()), list(Ast.Expression.t())) ::
+          {Ast.Expression.t(), list(Token.t())}
+  defp parse_array_literal(tokens, acc \\ [])
+
+  defp parse_array_literal([%Token{type: :rbracket} | rest], acc) do
+    expression = {:array, %Ast.ArrayLiteral{token: Token.init(:lbracket, "["), elements: acc}}
+    {expression, rest}
+  end
+
+  defp parse_array_literal([_lbracket_token | rest], acc) do
+    {element, rest} = parse_expression(rest, :lowest)
+    parse_array_literal(rest, acc ++ [element])
   end
 
   defp parse_if_expression([_if_token | rest]) do

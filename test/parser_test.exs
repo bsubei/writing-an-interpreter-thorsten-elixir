@@ -96,6 +96,39 @@ defmodule ParserTest do
     end
   end
 
+  test "parser can parse array literal expression statements" do
+    program = "[1, 2 * 2, 3 + 3]" |> Lexer.init() |> Parser.init() |> Parser.parse_program()
+    assert length(program.statements) == 1
+
+    case program.statements |> List.first() do
+      {:expression_statement, stmt} ->
+        case stmt.expression do
+          {:array, array_literal} ->
+            assert array_literal.token == %Token{type: :lbracket, literal: "["}
+
+            assert array_literal.elements == [
+                     {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "1"), value: 1}},
+                     {:infix,
+                      %Ast.Infix{
+                        operator_token: Token.init(:asterisk, "*"),
+                        left_expression:
+                          {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "2"), value: 2}},
+                        right_expression:
+                          {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "2"), value: 2}}
+                      }},
+                     {:infix,
+                      %Ast.Infix{
+                        operator_token: Token.init(:plus, "+"),
+                        left_expression:
+                          {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "3"), value: 3}},
+                        right_expression:
+                          {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "3"), value: 3}}
+                      }}
+                   ]
+        end
+    end
+  end
+
   test "parser can parse nested prefix expressions" do
     inputs_and_outputs = [
       {"!5;", Token.init(:bang, "!"), 5, 1},
