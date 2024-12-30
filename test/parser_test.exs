@@ -223,7 +223,8 @@ defmodule ParserTest do
       "a + b + c",
       "a * b + c",
       "a - b * c",
-      "(a + b) * (c - 42)"
+      "(a + b) * (c - 42)",
+      "a * [1, 2, 3, 4][b * c] * d"
     ]
 
     outputs = [
@@ -332,7 +333,51 @@ defmodule ParserTest do
                      {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "42"), value: 42}}
                  }}
             }}
-       }}
+       }},
+      {
+        :infix,
+        %Ast.Infix{
+          operator_token: Token.init(:asterisk, "*"),
+          left_expression:
+            {:infix,
+             %Ast.Infix{
+               operator_token: Token.init(:asterisk, "*"),
+               left_expression:
+                 {:identifier, %Ast.Identifier{token: Token.init(:ident, "a"), value: "a"}},
+               right_expression:
+                 {:index_expression,
+                  %Ast.IndexExpression{
+                    left:
+                      {:array,
+                       %Ast.ArrayLiteral{
+                         token: Token.init(:lbracket, "["),
+                         elements: [
+                           {:integer,
+                            %Ast.IntegerLiteral{token: Token.init(:int, "1"), value: 1}},
+                           {:integer,
+                            %Ast.IntegerLiteral{token: Token.init(:int, "2"), value: 2}},
+                           {:integer,
+                            %Ast.IntegerLiteral{token: Token.init(:int, "3"), value: 3}},
+                           {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "4"), value: 4}}
+                         ]
+                       }},
+                    index:
+                      {:infix,
+                       %Ast.Infix{
+                         operator_token: Token.init(:asterisk, "*"),
+                         left_expression:
+                           {:identifier,
+                            %Ast.Identifier{token: Token.init(:ident, "b"), value: "b"}},
+                         right_expression:
+                           {:identifier,
+                            %Ast.Identifier{token: Token.init(:ident, "c"), value: "c"}}
+                       }}
+                  }}
+             }},
+          right_expression:
+            {:identifier, %Ast.Identifier{token: Token.init(:ident, "d"), value: "d"}}
+        }
+      }
     ]
 
     Enum.zip(inputs, outputs)
@@ -567,6 +612,43 @@ defmodule ParserTest do
     inputs_and_outputs
     |> Enum.each(fn {input, expected_output} ->
       program = input |> Lexer.init() |> Parser.init() |> Parser.parse_program()
+
+      assert length(program.statements) == 1
+
+      case program.statements |> List.first() do
+        {:expression_statement, stmt} ->
+          assert stmt.expression == expected_output
+      end
+    end)
+  end
+
+  test "parser can parse index expressions" do
+    inputs_and_outputs = [
+      {"myArray[1 + 1]",
+       {:index_expression,
+        %Ast.IndexExpression{
+          left:
+            {:identifier, %Ast.Identifier{token: Token.init(:ident, "myArray"), value: "myArray"}},
+          index: {
+            :infix,
+            %Ast.Infix{
+              operator_token: Token.init(:plus, "+"),
+              left_expression:
+                {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "1"), value: 1}},
+              right_expression:
+                {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "1"), value: 1}}
+            }
+          }
+        }}}
+    ]
+
+    inputs_and_outputs
+    |> Enum.each(fn {input, expected_output} ->
+      program =
+        input
+        |> Lexer.init()
+        |> Parser.init()
+        |> Parser.parse_program()
 
       assert length(program.statements) == 1
 

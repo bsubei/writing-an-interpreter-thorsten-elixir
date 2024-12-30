@@ -33,9 +33,9 @@ defmodule MonkeyInterpreter.TokenType do
 end
 
 defmodule MonkeyInterpreter.TokenPrecedence do
-  @type t :: :lowest | :equals | :lessgreater | :sum | :product | :prefix | :call
+  @type t :: :lowest | :equals | :lessgreater | :sum | :product | :prefix | :call | :index
   # This defines the precedence ordering of expressions in the Monkey language.
-  @precedences [:lowest, :equals, :lessgreater, :sum, :product, :prefix, :call]
+  @precedences [:lowest, :equals, :lessgreater, :sum, :product, :prefix, :call, :index]
 
   @spec from_token_type(MonkeyInterpreter.TokenType.t()) :: t() | nil
   def from_token_type(token_type) do
@@ -49,6 +49,7 @@ defmodule MonkeyInterpreter.TokenPrecedence do
       :slash -> :product
       :asterisk -> :product
       :lparen -> :call
+      :lbracket -> :index
       _ -> nil
     end
   end

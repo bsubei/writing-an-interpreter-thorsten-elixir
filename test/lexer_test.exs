@@ -16,9 +16,9 @@ let result = add(five, ten);
 5 < 10 > 5;
 
 if (5 < 10) {
-	return true;
+  return true;
 } else {
-	return false;
+  return false;
 }
 
 10 == 10;
@@ -117,15 +117,6 @@ if (5 < 10) {
 
     lexer = Lexer.init(input)
 
-    # Go over every expected token, smuggling along the updated lexer as the "acc" in a reduce/fold.
-    # Check that the returned token matches each expected token.
-    # expected_tokens
-    # |> Enum.reduce(lexer, fn expected_token, l ->
-    #   assert {new_lexer, ^expected_token} = Lexer.next_token(l)
-    #   new_lexer
-    # end)
-
-    # This is a nicer way to do it, just grab all the tokens and compare them.
     assert expected_tokens == Lexer.all_tokens(lexer)
   end
 end

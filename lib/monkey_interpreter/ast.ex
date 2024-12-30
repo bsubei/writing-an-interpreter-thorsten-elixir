@@ -65,6 +65,7 @@ defmodule MonkeyInterpreter.Ast do
             | {:if_expression, Ast.IfExpression.t()}
             | {:function_literal, Ast.FunctionLiteral.t()}
             | {:call_expression, Ast.CallExpression.t()}
+            | {:index_expression, Ast.IndexExpression.t()}
             | {:prefix, Ast.Prefix.t()}
             | {:infix, Ast.Infix.t()}
   end
@@ -137,6 +138,12 @@ defmodule MonkeyInterpreter.Ast do
             arguments: list(Ast.Expression.t())
           }
     @enforce_keys [:function, :arguments]
+    defstruct @enforce_keys
+  end
+
+  defmodule IndexExpression do
+    @type t :: %__MODULE__{left: Ast.Expression.t(), index: Ast.Expression.t()}
+    @enforce_keys [:left, :index]
     defstruct @enforce_keys
   end
 

@@ -219,13 +219,24 @@ defmodule MonkeyInterpreter.Parser do
 
         {expression, rest}
 
-      # Special infix expression case: a call expression.
-      # TODO should this be an {:infix, expression} ?
+      # Special pretending-to-be-infix expression case: a call expression.
       is_precedence_satisfied and operator_token.type == :lparen ->
         {arguments, rest} = parse_call_arguments(rest)
 
         expression =
           {:call_expression, %Ast.CallExpression{function: left_expression, arguments: arguments}}
+
+        {expression, rest}
+
+      # Special pretending-to-be-infix expression case: an index expression.
+      is_precedence_satisfied and operator_token.type == :lbracket ->
+        # {index, rest} = parse_expression(rest, operator_precedence)
+        {index, rest} = parse_expression(rest, :lowest)
+
+        [%Token{type: :rbracket} | rest] = rest
+
+        expression =
+          {:index_expression, %Ast.IndexExpression{left: left_expression, index: index}}
 
         {expression, rest}
 
