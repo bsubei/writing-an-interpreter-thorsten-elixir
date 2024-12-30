@@ -21,6 +21,8 @@ defmodule MonkeyInterpreter.TokenType do
           | :rparen
           | :lbrace
           | :rbrace
+          | :lbracket
+          | :rbracket
           | :function
           | :let
           | true

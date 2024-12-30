@@ -54,6 +54,8 @@ defmodule MonkeyInterpreter.Lexer do
   defp lex_token("}" <> rest), do: {Token.init(:rbrace, "}"), rest}
   defp lex_token("(" <> rest), do: {Token.init(:lparen, "("), rest}
   defp lex_token(")" <> rest), do: {Token.init(:rparen, ")"), rest}
+  defp lex_token("[" <> rest), do: {Token.init(:lbracket, "["), rest}
+  defp lex_token("]" <> rest), do: {Token.init(:rbracket, "]"), rest}
   # Multi char tokens, notice the ordering (more specific defined first).
   defp lex_token("==" <> rest), do: {Token.init(:eq, "=="), rest}
   defp lex_token("=" <> rest), do: {Token.init(:assign, "="), rest}

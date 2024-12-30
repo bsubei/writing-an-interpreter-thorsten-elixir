@@ -23,8 +23,9 @@ if (5 < 10) {
 
 10 == 10;
 10 != 9;
-"foobar"
-"foo bar"
+"foobar";
+"foo bar";
+[1, 2];
 '
 
     expected_tokens = [
@@ -102,7 +103,15 @@ if (5 < 10) {
       Token.init(:int, "9"),
       Token.init(:semicolon, ";"),
       Token.init(:string, "foobar"),
+      Token.init(:semicolon, ";"),
       Token.init(:string, "foo bar"),
+      Token.init(:semicolon, ";"),
+      Token.init(:lbracket, "["),
+      Token.init(:int, "1"),
+      Token.init(:comma, ","),
+      Token.init(:int, "2"),
+      Token.init(:rbracket, "]"),
+      Token.init(:semicolon, ";"),
       Token.init(:eof, "")
     ]
 
