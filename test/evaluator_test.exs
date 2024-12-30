@@ -150,8 +150,6 @@ ourFunction(20) + first + second;', 70},
       {"let len = 5; len;", 5},
       {"let len = fn(x) {x + 1}; len(1);", 2},
       {"let foo = fn(a) { a + 1 }; let bar = fn(b) {foo(b)}; bar(1)", 2}
-      # TODO this test is causing an infinite loop, there's probably a bug with the builtin resolution and shadowing.
-      # {~s'let len = fn(a) {len(a)}; len("hi");', 2}
     ]
 
     inputs_and_outputs
