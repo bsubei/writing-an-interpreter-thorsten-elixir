@@ -26,6 +26,7 @@ if (5 < 10) {
 "foobar";
 "foo bar";
 [1, 2];
+{"foo": "bar"}
 '
 
     expected_tokens = [
@@ -112,6 +113,11 @@ if (5 < 10) {
       Token.init(:int, "2"),
       Token.init(:rbracket, "]"),
       Token.init(:semicolon, ";"),
+      Token.init(:lbrace, "{"),
+      Token.init(:string, "foo"),
+      Token.init(:colon, ":"),
+      Token.init(:string, "bar"),
+      Token.init(:rbrace, "}"),
       Token.init(:eof, "")
     ]
 

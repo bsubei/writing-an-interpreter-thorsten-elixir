@@ -49,6 +49,7 @@ defmodule MonkeyInterpreter.Lexer do
   defp lex_token("<" <> rest), do: {Token.init(:lt, "<"), rest}
   defp lex_token(">" <> rest), do: {Token.init(:gt, ">"), rest}
   defp lex_token(";" <> rest), do: {Token.init(:semicolon, ";"), rest}
+  defp lex_token(":" <> rest), do: {Token.init(:colon, ":"), rest}
   defp lex_token("," <> rest), do: {Token.init(:comma, ","), rest}
   defp lex_token("{" <> rest), do: {Token.init(:lbrace, "{"), rest}
   defp lex_token("}" <> rest), do: {Token.init(:rbrace, "}"), rest}

@@ -17,6 +17,7 @@ defmodule MonkeyInterpreter.TokenType do
           | :not_eq
           | :comma
           | :semicolon
+          | :colon
           | :lparen
           | :rparen
           | :lbrace
