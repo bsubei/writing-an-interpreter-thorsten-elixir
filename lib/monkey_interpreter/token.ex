@@ -192,6 +192,7 @@ defmodule MonkeyInterpreter.Token do
   def user_displayed_type(value) when is_integer(value), do: "INTEGER"
   def user_displayed_type(value) when is_binary(value), do: "STRING"
   def user_displayed_type(value) when is_nil(value), do: "NULL"
+  def user_displayed_type(%MonkeyInterpreter.Array{}), do: "ARRAY"
 
   # TODO double check whether the definition of truthy/falsey in the Monkey language differs from Elixir (the host language).
   @spec is_truthy(any()) :: boolean()

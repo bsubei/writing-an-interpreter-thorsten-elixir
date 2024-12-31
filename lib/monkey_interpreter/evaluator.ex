@@ -168,6 +168,33 @@ defmodule MonkeyInterpreter.Evaluator do
     end
   end
 
+  defp eval({:index_expression, %Ast.IndexExpression{} = expr}, environment) do
+    case eval(expr.left, environment) do
+      {:error, reason} ->
+        {:error, reason}
+
+      {:ok, array, _env} ->
+        case eval(expr.index, environment) do
+          {:error, reason} ->
+            {:error, reason}
+
+          {:ok, index, _env} ->
+            case({array, index}) do
+              {%Array{}, index} when is_integer(index) and index < 0 ->
+                {:ok, nil, environment}
+
+              {%Array{}, index} when is_integer(index) and index >= 0 ->
+                {value, _new_array} = array.elements |> List.pop_at(index)
+                {:ok, value, environment}
+
+              _ ->
+                {:error,
+                 "Index operator requires an array and an integer index, got: #{Token.user_displayed_type(array)} and #{Token.user_displayed_type(index)}"}
+            end
+        end
+    end
+  end
+
   defp eval({:prefix, %Ast.Prefix{operator_token: token} = expr}, environment) do
     if Token.is_prefix(token) do
       case eval(expr.right_expression, environment) do
