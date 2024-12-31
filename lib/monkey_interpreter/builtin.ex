@@ -71,6 +71,12 @@ defmodule MonkeyInterpreter.Builtin do
 
           args ->
             {:error, "wrong number of arguments. got=#{length(args)}, want=1"}
+        end),
+      "puts" =>
+        make_builtin(fn
+          args when is_list(args) ->
+            Enum.each(args, &IO.puts(&1))
+            {:ok, nil}
         end)
     }
   end
