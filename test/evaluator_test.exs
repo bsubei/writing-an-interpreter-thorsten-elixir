@@ -206,9 +206,9 @@ ourFunction(20) + first + second;', 70},
     inputs_and_outputs = [
       {~s'len("")', 0},
       {~s'len("four")', 4},
-      {~s'len("hello world")', 11}
-      # {~s'len([1, 2, 3])', 3},
-      # {~s'len([])', 0}
+      {~s'len("hello world")', 11},
+      {~s'len([1, 2, 3])', 3},
+      {~s'len([])', 0}
       # {~s'puts("hello", "world!")', nil},
       # {~s'first([1, 2, 3])', 1},
       # {~s'first([])', nil},

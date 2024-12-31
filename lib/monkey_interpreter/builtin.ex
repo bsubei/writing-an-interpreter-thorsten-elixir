@@ -1,5 +1,5 @@
 defmodule MonkeyInterpreter.Builtin do
-  alias MonkeyInterpreter.{Builtin, Object, Token}
+  alias MonkeyInterpreter.{Builtin, Object, Token, Array}
 
   @type t :: %__MODULE__{func: Builtin.Function.t()}
   @enforce_keys [:func]
@@ -12,6 +12,9 @@ defmodule MonkeyInterpreter.Builtin do
         make_builtin(fn
           [value] when is_binary(value) ->
             {:ok, String.length(value)}
+
+          [%Array{elements: elements}] ->
+            {:ok, length(elements)}
 
           [value] ->
             {:error, "argument to `len` not supported, got #{Token.user_displayed_type(value)}"}
