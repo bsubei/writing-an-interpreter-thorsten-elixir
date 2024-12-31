@@ -5,5 +5,6 @@ defmodule MonkeyInterpreter.Object do
           | MonkeyInterpreter.Function.t()
           | MonkeyInterpreter.Builtin.t()
           | MonkeyInterpreter.Array.t()
+          | MonkeyInterpreter.Hash.t()
           | nil
 end

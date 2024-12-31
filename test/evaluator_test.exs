@@ -38,7 +38,14 @@ defmodule EvaluatorTest do
       {"[1,2,3][3]", nil},
       {"[1,2,3][-1]", nil},
       {~s'{"one": 10 - 9, "two": 1 + 1, "thr" + "ee" : 6 / 2, 4: 4, true: 5, false: 6}',
-       %Hash{data: %{"one" => 1, "two" => 2, "three" => 3, 4 => 4, true => 5, false => 6}}}
+       %Hash{data: %{"one" => 1, "two" => 2, "three" => 3, 4 => 4, true => 5, false => 6}}},
+      {~s'{"foo": 5}["foo"]', 5},
+      {~s'{"foo": 5}["bar"]', nil},
+      {~s'let key = "foo"; {"foo": 5}[key]', 5},
+      {~s'{}["foo"]', nil},
+      {~s'{5: 42}[5]', 42},
+      {~s'{true: 5}[true]', 5},
+      {~s'{false: 5}[false]', 5}
     ]
 
     inputs_and_outputs
@@ -93,7 +100,8 @@ defmodule EvaluatorTest do
       {"let x = y;", "identifier not found: y"},
       {"let x = 5; let y = x; let z = f", "identifier not found: f"},
       {"fn (x, y) {return z;}(1,2)", "identifier not found: z"},
-      {~s'"Hello" - "World"', "type mismatch: STRING - STRING"}
+      {~s'"Hello" - "World"', "type mismatch: STRING - STRING"},
+      {~s'{"name": "Monkey"}[fn(x) { x }];', "unusable as a hash key: FUNCTION"}
     ]
 
     inputs_and_outputs

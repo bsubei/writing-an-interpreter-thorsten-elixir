@@ -189,11 +189,14 @@ defmodule MonkeyInterpreter.Token do
     end
   end
 
+  # TODO this should probably live in Object.
   def user_displayed_type(value) when is_boolean(value), do: "BOOLEAN"
   def user_displayed_type(value) when is_integer(value), do: "INTEGER"
   def user_displayed_type(value) when is_binary(value), do: "STRING"
   def user_displayed_type(value) when is_nil(value), do: "NULL"
   def user_displayed_type(%MonkeyInterpreter.Array{}), do: "ARRAY"
+  def user_displayed_type(%MonkeyInterpreter.Function{}), do: "FUNCTION"
+  def user_displayed_type(%MonkeyInterpreter.Hash{}), do: "HASH"
 
   # TODO double check whether the definition of truthy/falsey in the Monkey language differs from Elixir (the host language).
   @spec is_truthy(any()) :: boolean()

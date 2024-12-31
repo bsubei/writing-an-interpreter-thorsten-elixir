@@ -194,23 +194,32 @@ defmodule MonkeyInterpreter.Evaluator do
       {:error, reason} ->
         {:error, reason}
 
-      {:ok, array, _env} ->
+      # TODO simplify by matching on object earlier (?)
+      {:ok, object, _env} ->
         case eval(expr.index, environment) do
           {:error, reason} ->
             {:error, reason}
 
           {:ok, index, _env} ->
-            case({array, index}) do
+            case({object, index}) do
               {%Array{}, index} when is_integer(index) and index < 0 ->
                 {:ok, nil, environment}
 
-              {%Array{}, index} when is_integer(index) and index >= 0 ->
-                {value, _new_array} = array.elements |> List.pop_at(index)
+              {%Array{elements: elements}, index} when is_integer(index) and index >= 0 ->
+                {value, _new_array} = elements |> List.pop_at(index)
                 {:ok, value, environment}
+
+              {%Hash{data: data}, key}
+              when is_integer(key) or is_binary(key) or is_boolean(key) ->
+                value = data |> Map.get(index)
+                {:ok, value, environment}
+
+              {%Hash{}, _key} ->
+                {:error, "unusable as a hash key: #{Token.user_displayed_type(index)}"}
 
               _ ->
                 {:error,
-                 "Index operator requires an array and an integer index, got: #{Token.user_displayed_type(array)} and #{Token.user_displayed_type(index)}"}
+                 "Index operator requires an array or hash, got: #{Token.user_displayed_type(object)} and index: #{Token.user_displayed_type(index)}"}
             end
         end
     end
