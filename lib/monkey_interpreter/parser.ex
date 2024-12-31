@@ -105,8 +105,6 @@ defmodule MonkeyInterpreter.Parser do
 
   @spec parse_expression(list(Token.t()), TokenPrecedence.t()) ::
           {Ast.Expression.t(), list(Token.t())}
-  # Base case, stop recursing because we encountered the end of this expression (a semicolon).
-  # defp parse_expression([%Token{type: :semicolon} | rest]), do: {nil, rest}
   # Parse this token and continue to parse the rest of the expression.
   defp parse_expression([_token | _rest] = tokens, precedence) do
     # Always parse one prefix expression.
