@@ -213,9 +213,9 @@ ourFunction(20) + first + second;', 70},
       {~s'first([1, 2, 3])', 1},
       {~s'first([])', nil},
       {~s'last([1, 2, 3])', 3},
-      {~s'last([])', nil}
-      # {~s'rest([1, 2, 3])', []int{2, 3}},
-      # {~s'rest([])', nil},
+      {~s'last([])', nil},
+      {~s'rest([1, 2, 3])', %Array{elements: [2, 3]}},
+      {~s'rest([])', nil}
       # {~s'push([], 1)', []int{1}},
       # {~s'push(1, 1)', "argument to `push` must be ARRAY, got INTEGER"},
     ]
