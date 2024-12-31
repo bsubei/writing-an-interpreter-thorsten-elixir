@@ -38,7 +38,7 @@ defmodule MonkeyInterpreter.Repl do
               environment
 
             {:ok, value, new_environment} ->
-              IO.puts(value)
+              IO.puts(inspect(value))
               new_environment
           end
 
