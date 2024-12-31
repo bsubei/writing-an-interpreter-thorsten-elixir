@@ -211,10 +211,9 @@ ourFunction(20) + first + second;', 70},
       {~s'len([])', 0},
       # {~s'puts("hello", "world!")', nil},
       {~s'first([1, 2, 3])', 1},
-      {~s'first([])', nil}
-      # {~s'last([1, 2, 3])', 3},
-      # {~s'last([])', nil},
-      # {~s'last(1)', "argument to `last` must be ARRAY, got INTEGER"},
+      {~s'first([])', nil},
+      {~s'last([1, 2, 3])', 3},
+      {~s'last([])', nil}
       # {~s'rest([1, 2, 3])', []int{2, 3}},
       # {~s'rest([])', nil},
       # {~s'push([], 1)', []int{1}},
@@ -238,8 +237,8 @@ ourFunction(20) + first + second;', 70},
     inputs_and_outputs = [
       {~s'len(1)', "argument to `len` not supported, got INTEGER"},
       {~s'len("one", "two")', "wrong number of arguments. got=2, want=1"},
-      {~s'first(1)', "argument to `first` must be ARRAY, got INTEGER"}
-      # {~s'last(1)', "argument to `last` must be ARRAY, got INTEGER"},
+      {~s'first(1)', "argument to `first` must be ARRAY, got INTEGER"},
+      {~s'last(1)', "argument to `last` must be ARRAY, got INTEGER"}
       # {~s'push(1, 1)', "argument to `push` must be ARRAY, got INTEGER"},
     ]
 

@@ -33,6 +33,18 @@ defmodule MonkeyInterpreter.Builtin do
 
           args ->
             {:error, "wrong number of arguments. got=#{length(args)}, want=1"}
+        end),
+      "last" =>
+        make_builtin(fn
+          [%Array{elements: elements}] ->
+            {elem, _new_array} = elements |> List.pop_at(-1)
+            {:ok, elem}
+
+          [value] ->
+            {:error, "argument to `last` must be ARRAY, got #{Token.user_displayed_type(value)}"}
+
+          args ->
+            {:error, "wrong number of arguments. got=#{length(args)}, want=1"}
         end)
     }
   end
