@@ -171,8 +171,8 @@ defmodule MonkeyInterpreter.Parser do
     parse_grouped_expression(tokens)
   end
 
-  defp parse_prefix([%Token{type: :lbracket} | _rest] = tokens) do
-    parse_array_literal(tokens)
+  defp parse_prefix([%Token{type: :lbracket} | rest]) do
+    parse_array_literal(rest)
   end
 
   defp parse_prefix([%Token{type: :if} | _rest] = tokens) do
@@ -230,7 +230,6 @@ defmodule MonkeyInterpreter.Parser do
 
       # Special pretending-to-be-infix expression case: an index expression.
       is_precedence_satisfied and operator_token.type == :lbracket ->
-        # {index, rest} = parse_expression(rest, operator_precedence)
         {index, rest} = parse_expression(rest, :lowest)
 
         [%Token{type: :rbracket} | rest] = rest
@@ -265,8 +264,15 @@ defmodule MonkeyInterpreter.Parser do
     {expression, rest}
   end
 
-  defp parse_array_literal([_lbracket_token | rest], acc) do
-    {element, rest} = parse_expression(rest, :lowest)
+  defp parse_array_literal(tokens, acc) do
+    {element, rest} = parse_expression(tokens, :lowest)
+    # Get rid of the subsequent comma if it exists (it doesn't exist for the last parameter).
+    rest =
+      case rest do
+        [%Token{type: :comma} | rest] -> rest
+        _ -> rest
+      end
+
     parse_array_literal(rest, acc ++ [element])
   end
 
