@@ -61,6 +61,7 @@ defmodule MonkeyInterpreter.Ast do
             | {:integer, Ast.IntegerLiteral.t()}
             | {:string, Ast.StringLiteral.t()}
             | {:array, Ast.ArrayLiteral.t()}
+            | {:hash, Ast.HashLiteral.t()}
             | {:grouped, Ast.GroupedExpression.t()}
             | {:if_expression, Ast.IfExpression.t()}
             | {:function_literal, Ast.FunctionLiteral.t()}
@@ -99,6 +100,12 @@ defmodule MonkeyInterpreter.Ast do
   defmodule ArrayLiteral do
     @type t :: %__MODULE__{token: Token.t(), elements: list(Ast.Expression.t())}
     @enforce_keys [:token, :elements]
+    defstruct @enforce_keys
+  end
+
+  defmodule HashLiteral do
+    @type t :: %__MODULE__{data: %{Ast.Expression.t() => Ast.Expression.t()}}
+    @enforce_keys [:data]
     defstruct @enforce_keys
   end
 

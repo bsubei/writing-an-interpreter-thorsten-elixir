@@ -129,6 +129,71 @@ defmodule ParserTest do
     end
   end
 
+  test "parser can parse hash literal expression statements" do
+    inputs_and_outputs = [
+      {~s'{"one": 1, "two": 2, "three": 3}',
+       %{
+         {:string, %Ast.StringLiteral{token: Token.init(:string, "one"), value: "one"}} =>
+           {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "1"), value: 1}},
+         {:string, %Ast.StringLiteral{token: Token.init(:string, "two"), value: "two"}} =>
+           {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "2"), value: 2}},
+         {:string, %Ast.StringLiteral{token: Token.init(:string, "three"), value: "three"}} =>
+           {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "3"), value: 3}}
+       }},
+      {"{}", %{}},
+      {~s'{"one": 0 + 1, "two": 10 - 8, "three" : 15 / 5}',
+       %{
+         {:string, %Ast.StringLiteral{token: Token.init(:string, "one"), value: "one"}} =>
+           {:infix,
+            %Ast.Infix{
+              operator_token: Token.init(:plus, "+"),
+              left_expression:
+                {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "0"), value: 0}},
+              right_expression:
+                {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "1"), value: 1}}
+            }},
+         {:string, %Ast.StringLiteral{token: Token.init(:string, "two"), value: "two"}} =>
+           {:infix,
+            %Ast.Infix{
+              operator_token: Token.init(:minus, "-"),
+              left_expression:
+                {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "10"), value: 10}},
+              right_expression:
+                {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "8"), value: 8}}
+            }},
+         {:string, %Ast.StringLiteral{token: Token.init(:string, "three"), value: "three"}} =>
+           {:infix,
+            %Ast.Infix{
+              operator_token: Token.init(:slash, "/"),
+              left_expression:
+                {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "15"), value: 15}},
+              right_expression:
+                {:integer, %Ast.IntegerLiteral{token: Token.init(:int, "5"), value: 5}}
+            }}
+       }}
+    ]
+
+    # Go over every input let statement, and check it against the parsed output (identifier and value).
+    inputs_and_outputs
+    |> Enum.each(fn {input, expected_output} ->
+      program =
+        input
+        |> Lexer.init()
+        |> Parser.init()
+        |> Parser.parse_program()
+
+      assert length(program.statements) == 1
+
+      case program.statements |> List.first() do
+        {:expression_statement, stmt} ->
+          case stmt.expression do
+            {:hash, hash_literal} ->
+              assert hash_literal.data == expected_output
+          end
+      end
+    end)
+  end
+
   test "parser can parse nested prefix expressions" do
     inputs_and_outputs = [
       {"!5;", Token.init(:bang, "!"), 5, 1},

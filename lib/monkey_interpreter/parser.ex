@@ -175,6 +175,10 @@ defmodule MonkeyInterpreter.Parser do
     parse_array_literal(rest)
   end
 
+  defp parse_prefix([%Token{type: :lbrace} | rest]) do
+    parse_hash_literal(rest)
+  end
+
   defp parse_prefix([%Token{type: :if} | _rest] = tokens) do
     parse_if_expression(tokens)
   end
@@ -274,6 +278,31 @@ defmodule MonkeyInterpreter.Parser do
       end
 
     parse_array_literal(rest, acc ++ [element])
+  end
+
+  # TODO see if we can use reduce to make all these recursive functions a bit simpler to read.
+  @spec parse_hash_literal(list(Token.t()), %{Ast.Expression.t() => Ast.Expression.t()}) ::
+          {Ast.Expression.t(), list(Token.t())}
+  defp parse_hash_literal(tokens, acc \\ %{})
+
+  defp parse_hash_literal([%Token{type: :rbrace} | rest], acc) do
+    expression = {:hash, %Ast.HashLiteral{data: acc}}
+    {expression, rest}
+  end
+
+  defp parse_hash_literal(tokens, acc) do
+    {key, rest} = parse_expression(tokens, :lowest)
+    [%Token{type: :colon} | rest] = rest
+    {value, rest} = parse_expression(rest, :lowest)
+
+    rest =
+      case rest do
+        [%Token{type: :comma} | rest] -> rest
+        _ -> rest
+      end
+
+    new_acc = acc |> Map.put(key, value)
+    parse_hash_literal(rest, new_acc)
   end
 
   defp parse_if_expression([_if_token | rest]) do
