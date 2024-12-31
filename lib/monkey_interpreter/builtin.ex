@@ -59,6 +59,18 @@ defmodule MonkeyInterpreter.Builtin do
 
           args ->
             {:error, "wrong number of arguments. got=#{length(args)}, want=1"}
+        end),
+      "push" =>
+        make_builtin(fn
+          [%Array{elements: elements}, elem_to_push] ->
+            {:ok, %Array{elements: elements ++ [elem_to_push]}}
+
+          [value, _] ->
+            {:error,
+             "first argument to `push` must be ARRAY, got #{Token.user_displayed_type(value)}"}
+
+          args ->
+            {:error, "wrong number of arguments. got=#{length(args)}, want=1"}
         end)
     }
   end
