@@ -253,4 +253,52 @@ ourFunction(20) + first + second;', 70},
       assert reason == expected_output
     end)
   end
+
+  test "evaluator can evaluate higher order functions using arrays" do
+    inputs_and_outputs = [
+      {~s'
+      let map = fn(arr, f) {
+        let iter = fn(arr, accumulated) {
+          if (len(arr) == 0) {
+            accumulated
+          } else {
+            iter(rest(arr), push(accumulated, f(first(arr))));
+          }
+        };
+        iter(arr, []);
+      };
+      let a = [1, 2, 3, 4];
+      let double = fn(x) { x * 2 };
+      map(a, double);
+      ', %Array{elements: [2, 4, 6, 8]}},
+      {~s'
+      let reduce = fn(arr, initial, f) {
+        let iter = fn(arr, result) {
+          if (len(arr) == 0) {
+            result
+          } else {
+            iter(rest(arr), f(result, first(arr)));
+          }
+        };
+        iter(arr, initial);
+      };
+      let sum = fn(arr) {
+        reduce(arr, 0, fn(initial, el) { initial + el });
+      };
+      sum([1, 2, 3, 4, 5])
+      ', 15}
+    ]
+
+    inputs_and_outputs
+    |> Enum.each(fn {input, expected_output} ->
+      {:ok, object, _environment} =
+        input
+        |> Lexer.init()
+        |> Parser.init()
+        |> Parser.parse_program()
+        |> Evaluator.evaluate(Environment.init())
+
+      assert object == expected_output
+    end)
+  end
 end
