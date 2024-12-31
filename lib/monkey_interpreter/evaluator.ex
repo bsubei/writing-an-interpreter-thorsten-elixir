@@ -1,5 +1,5 @@
 defmodule MonkeyInterpreter.Evaluator do
-  alias MonkeyInterpreter.{Ast, Token, Object, Function, Environment, Builtin, Array}
+  alias MonkeyInterpreter.{Ast, Token, Object, Function, Environment, Builtin, Array, Hash}
 
   @spec evaluate(Ast.Program.t(), Environment.t()) ::
           {:ok, Object.t(), Environment.t()} | {:error, String.t()}
@@ -133,6 +133,27 @@ defmodule MonkeyInterpreter.Evaluator do
     # Store the enclosing environment so it can be used when the function is applied/invoked, i.e. make it a closure.
     function = %Function{parameters: expr.parameters, body: expr.body, environment: environment}
     {:ok, function, environment}
+  end
+
+  defp eval({:hash, %Ast.HashLiteral{} = expr}, environment) do
+    # Eval and collect all the key-value expressions in the hash literal (stop early after you encounter an :error).
+    case expr.data
+         |> Enum.reduce_while(%{}, fn
+           {key_expression, value_expression}, acc ->
+             case eval(key_expression, environment) do
+               {:ok, key, _env} ->
+                 case eval(value_expression, environment) do
+                   {:ok, value, _env} -> {:cont, Map.put(acc, key, value)}
+                   {:error, reason} -> {:halt, {:error, reason}}
+                 end
+
+               {:error, reason} ->
+                 {:halt, {:error, reason}}
+             end
+         end) do
+      {:error, reason} -> {:error, reason}
+      data -> {:ok, %Hash{data: data}, environment}
+    end
   end
 
   defp eval({:call_expression, %Ast.CallExpression{} = expr}, environment) do

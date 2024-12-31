@@ -1,6 +1,6 @@
 defmodule EvaluatorTest do
   use ExUnit.Case
-  alias MonkeyInterpreter.{Lexer, Parser, Evaluator, Environment, Array}
+  alias MonkeyInterpreter.{Lexer, Parser, Evaluator, Environment, Array, Hash}
   doctest Evaluator
 
   test "evaluator can evaluate prefix and infix expressions" do
@@ -36,7 +36,9 @@ defmodule EvaluatorTest do
       {"let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2]", 6},
       {"let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]", 2},
       {"[1,2,3][3]", nil},
-      {"[1,2,3][-1]", nil}
+      {"[1,2,3][-1]", nil},
+      {~s'{"one": 10 - 9, "two": 1 + 1, "thr" + "ee" : 6 / 2, 4: 4, true: 5, false: 6}',
+       %Hash{data: %{"one" => 1, "two" => 2, "three" => 3, 4 => 4, true => 5, false => 6}}}
     ]
 
     inputs_and_outputs
